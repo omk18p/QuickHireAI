@@ -87,3 +87,4 @@
 // commit 1 on 2025-01-21: fix: crash on login edge case
 // commit 2 on 2025-01-21: ci: fix deploy script
 // commit 1 on 2025-01-19: style: center align text
+// commit 2 on 2025-01-19: ci: use latest node version
