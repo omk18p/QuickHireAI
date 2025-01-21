@@ -85,3 +85,4 @@
 // commit 1 on 2025-01-25: feat: add loading indicator
 // commit 1 on 2025-01-22: docs: add usage examples
 // commit 1 on 2025-01-21: fix: crash on login edge case
+// commit 2 on 2025-01-21: ci: fix deploy script
