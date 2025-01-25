@@ -82,3 +82,4 @@
 // commit 1 on 2025-01-30: refactor: move logic to hooks
 // commit 1 on 2025-01-28: chore: delete unused file
 // commit 1 on 2025-01-27: chore: update dependencies
+// commit 1 on 2025-01-25: feat: add loading indicator
