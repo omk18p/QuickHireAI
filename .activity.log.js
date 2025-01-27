@@ -81,3 +81,4 @@
 // commit 2 on 2025-02-02: feat: improve error message UX
 // commit 1 on 2025-01-30: refactor: move logic to hooks
 // commit 1 on 2025-01-28: chore: delete unused file
+// commit 1 on 2025-01-27: chore: update dependencies
