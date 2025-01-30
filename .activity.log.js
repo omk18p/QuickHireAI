@@ -79,3 +79,4 @@
 // commit 2 on 2025-02-07: chore: clean up files
 // commit 1 on 2025-02-02: refactor: simplify async call
 // commit 2 on 2025-02-02: feat: improve error message UX
+// commit 1 on 2025-01-30: refactor: move logic to hooks
