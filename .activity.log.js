@@ -77,3 +77,4 @@
 // commit 2 on 2025-02-08: test: snapshot test update
 // commit 1 on 2025-02-07: fix: bug in input validation
 // commit 2 on 2025-02-07: chore: clean up files
+// commit 1 on 2025-02-02: refactor: simplify async call
