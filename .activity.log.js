@@ -74,3 +74,4 @@
 // commit 1 on 2025-02-09: feat: add loading indicator
 // commit 2 on 2025-02-09: feat: add loading indicator
 // commit 1 on 2025-02-08: ci: fix deploy script
+// commit 2 on 2025-02-08: test: snapshot test update
