@@ -71,3 +71,4 @@
 // commit 1 on 2025-02-13: chore: rename component
 // commit 2 on 2025-02-13: docs: clarify setup instructions
 // commit 1 on 2025-02-10: refactor: cleanup function naming
+// commit 1 on 2025-02-09: feat: add loading indicator
