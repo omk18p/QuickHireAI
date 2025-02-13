@@ -69,3 +69,4 @@
 // commit 1 on 2025-02-16: style: update color palette
 // commit 2 on 2025-02-16: style: center align text
 // commit 1 on 2025-02-13: chore: rename component
+// commit 2 on 2025-02-13: docs: clarify setup instructions
