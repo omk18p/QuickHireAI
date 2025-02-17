@@ -65,3 +65,4 @@
 // commit 1 on 2025-03-04: update: reorder navbar items
 // commit 1 on 2025-03-02: update: reorder navbar items
 // commit 1 on 2025-02-19: ci: fix workflow name
+// commit 1 on 2025-02-17: fix: typo in variable name
