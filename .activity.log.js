@@ -61,3 +61,4 @@
 // commit 1 on 2025-03-27: chore: fix lint warnings
 // commit 1 on 2025-03-21: refactor: cleanup function naming
 // commit 1 on 2025-03-20: style: center align text
+// commit 1 on 2025-03-18: docs: add API documentation
