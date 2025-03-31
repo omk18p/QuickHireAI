@@ -56,3 +56,4 @@
 // commit 1 on 2025-04-02: style: apply consistent spacing
 // commit 1 on 2025-04-01: docs: add usage examples
 // commit 2 on 2025-04-01: test: add form validation tests
+// commit 1 on 2025-03-31: test: add unit test for auth
