@@ -54,3 +54,4 @@
 // commit 1 on 2025-04-03: refactor: consolidate conditions
 // commit 2 on 2025-04-03: style: apply consistent spacing
 // commit 1 on 2025-04-02: style: apply consistent spacing
+// commit 1 on 2025-04-01: docs: add usage examples
