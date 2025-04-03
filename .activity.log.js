@@ -51,3 +51,4 @@
 // commit 1 on 2025-04-14: fix: typo in variable name
 // commit 1 on 2025-04-12: chore: fix lint warnings
 // commit 1 on 2025-04-08: ci: fix workflow name
+// commit 1 on 2025-04-03: refactor: consolidate conditions
