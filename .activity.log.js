@@ -52,3 +52,4 @@
 // commit 1 on 2025-04-12: chore: fix lint warnings
 // commit 1 on 2025-04-08: ci: fix workflow name
 // commit 1 on 2025-04-03: refactor: consolidate conditions
+// commit 2 on 2025-04-03: style: apply consistent spacing
