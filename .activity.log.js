@@ -49,3 +49,4 @@
 // commit 1 on 2025-04-15: update: change favicon
 // commit 2 on 2025-04-15: refactor: consolidate conditions
 // commit 1 on 2025-04-14: fix: typo in variable name
+// commit 1 on 2025-04-12: chore: fix lint warnings
