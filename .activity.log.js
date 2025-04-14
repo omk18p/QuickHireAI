@@ -48,3 +48,4 @@
 // commit 1 on 2025-04-18: feat: keyboard shortcut support
 // commit 1 on 2025-04-15: update: change favicon
 // commit 2 on 2025-04-15: refactor: consolidate conditions
+// commit 1 on 2025-04-14: fix: typo in variable name
