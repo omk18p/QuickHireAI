@@ -46,3 +46,4 @@
 // commit 1 on 2025-04-20: fix: layout shift issue
 // commit 2 on 2025-04-20: style: responsive layout tweaks
 // commit 1 on 2025-04-18: feat: keyboard shortcut support
+// commit 1 on 2025-04-15: update: change favicon
