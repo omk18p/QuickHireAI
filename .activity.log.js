@@ -45,3 +45,4 @@
 // commit 1 on 2025-05-09: fix: crash on login edge case
 // commit 1 on 2025-04-20: fix: layout shift issue
 // commit 2 on 2025-04-20: style: responsive layout tweaks
+// commit 1 on 2025-04-18: feat: keyboard shortcut support
