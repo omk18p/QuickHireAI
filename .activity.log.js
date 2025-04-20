@@ -43,3 +43,4 @@
 // commit 1 on 2025-05-11: refactor: simplify async call
 // commit 2 on 2025-05-11: fix: bug in input validation
 // commit 1 on 2025-05-09: fix: crash on login edge case
+// commit 1 on 2025-04-20: fix: layout shift issue
