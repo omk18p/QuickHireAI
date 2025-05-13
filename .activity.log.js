@@ -39,3 +39,4 @@
 // commit 2 on 2025-05-15: ci: fix workflow name
 // commit 1 on 2025-05-14: fix: bug in input validation
 // commit 1 on 2025-05-13: ci: fix workflow name
+// commit 2 on 2025-05-13: refactor: simplify async call
