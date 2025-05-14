@@ -37,3 +37,4 @@
 // commit 2 on 2025-05-17: fix: typo in variable name
 // commit 1 on 2025-05-15: fix: typo in variable name
 // commit 2 on 2025-05-15: ci: fix workflow name
+// commit 1 on 2025-05-14: fix: bug in input validation
