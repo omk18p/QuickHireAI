@@ -33,3 +33,4 @@
 // commit 1 on 2025-05-22: feat: add dark mode toggle
 // commit 1 on 2025-05-21: style: responsive layout tweaks
 // commit 2 on 2025-05-21: feat: improve error message UX
+// commit 1 on 2025-05-17: refactor: cleanup function naming
