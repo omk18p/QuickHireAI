@@ -34,3 +34,4 @@
 // commit 1 on 2025-05-21: style: responsive layout tweaks
 // commit 2 on 2025-05-21: feat: improve error message UX
 // commit 1 on 2025-05-17: refactor: cleanup function naming
+// commit 2 on 2025-05-17: fix: typo in variable name
