@@ -31,3 +31,4 @@
 // commit 1 on 2025-05-23: style: center align text
 // commit 2 on 2025-05-23: chore: clean up files
 // commit 1 on 2025-05-22: feat: add dark mode toggle
+// commit 1 on 2025-05-21: style: responsive layout tweaks
