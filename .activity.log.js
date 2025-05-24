@@ -27,3 +27,4 @@
 // commit 2 on 2025-05-27: style: fix font sizes
 // commit 1 on 2025-05-25: style: fix font sizes
 // commit 2 on 2025-05-25: test: fix failing dashboard test
+// commit 1 on 2025-05-24: feat: add dark mode toggle
