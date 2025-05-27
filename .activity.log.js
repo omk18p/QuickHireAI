@@ -24,3 +24,4 @@
 // commit 1 on 2025-05-28: refactor: extract utility method
 // commit 2 on 2025-05-28: feat: keyboard shortcut support
 // commit 1 on 2025-05-27: docs: update README
+// commit 2 on 2025-05-27: style: fix font sizes
