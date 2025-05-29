@@ -20,3 +20,4 @@
 // commit 2 on 2025-06-05: docs: add API documentation
 // commit 1 on 2025-06-01: style: responsive layout tweaks
 // commit 1 on 2025-05-29: test: snapshot test update
+// commit 2 on 2025-05-29: feat: add dark mode toggle
