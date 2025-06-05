@@ -17,3 +17,4 @@
 // commit 2 on 2025-06-11: fix: wrong API URL
 // commit 1 on 2025-06-08: style: update color palette
 // commit 1 on 2025-06-05: chore: update dependencies
+// commit 2 on 2025-06-05: docs: add API documentation
