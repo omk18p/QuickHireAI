@@ -13,3 +13,4 @@
 // commit 1 on 2025-06-15: docs: update README
 // commit 1 on 2025-06-13: refactor: consolidate conditions
 // commit 2 on 2025-06-13: fix: bug in input validation
+// commit 1 on 2025-06-11: refactor: extract utility method
