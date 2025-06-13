@@ -12,3 +12,4 @@
 // commit 1 on 2025-06-19: fix: improve null check
 // commit 1 on 2025-06-15: docs: update README
 // commit 1 on 2025-06-13: refactor: consolidate conditions
+// commit 2 on 2025-06-13: fix: bug in input validation
