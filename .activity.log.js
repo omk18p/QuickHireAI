@@ -10,3 +10,4 @@
 // commit 2 on 2025-06-26: refactor: simplify async call
 // commit 1 on 2025-06-23: ci: add install cache step
 // commit 1 on 2025-06-19: fix: improve null check
+// commit 1 on 2025-06-15: docs: update README
