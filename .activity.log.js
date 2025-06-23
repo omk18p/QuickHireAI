@@ -8,3 +8,4 @@
 // commit 2 on 2025-07-02: chore: clean up files
 // commit 1 on 2025-06-26: feat: keyboard shortcut support
 // commit 2 on 2025-06-26: refactor: simplify async call
+// commit 1 on 2025-06-23: ci: add install cache step
