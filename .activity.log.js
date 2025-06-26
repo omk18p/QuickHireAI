@@ -6,3 +6,4 @@
 // commit 1 on 2025-07-05: docs: improve explanation in overview
 // commit 1 on 2025-07-02: refactor: move logic to hooks
 // commit 2 on 2025-07-02: chore: clean up files
+// commit 1 on 2025-06-26: feat: keyboard shortcut support
