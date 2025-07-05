@@ -3,3 +3,4 @@
 // commit 2 on 2025-07-08: feat: improve error message UX
 // commit 1 on 2025-07-07: chore: delete unused file
 // commit 2 on 2025-07-07: docs: improve explanation in overview
+// commit 1 on 2025-07-05: docs: improve explanation in overview
