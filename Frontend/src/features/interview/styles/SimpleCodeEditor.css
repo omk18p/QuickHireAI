@@ -1,0 +1,121 @@
+.simple-code-editor {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1f2937;
+}
+
+.editor-header {
+  background: #374151;
+  padding: 0.75rem;
+  border-bottom: 1px solid #4b5563;
+}
+
+.language-selector {
+  background: #4b5563;
+  color: white;
+  border: 1px solid #6b7280;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.code-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 1rem;
+  background: #1f2937;
+  color: #f9fafb;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border: none;
+  resize: vertical;
+}
+
+.code-textarea:focus {
+  outline: none;
+}
+
+.editor-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.language-label {
+  font-size: 0.85rem;
+  color: #9cdcfe;
+  font-family: monospace;
+  padding: 2px 6px;
+  background: rgba(156, 220, 254, 0.1);
+  border-radius: 4px;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.expand-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
+.simple-editor-container.expanded {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  height: 90vh;
+  z-index: 1000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.editor-wrapper {
+  position: relative;
+  height: 100%;
+}
+
+.editor-loading {
+  padding: 1rem;
+  color: #9cdcfe;
+  font-family: monospace;
+  text-align: center;
+}
+
+/* Dark theme customization */
+.monaco-editor .margin,
+.monaco-editor-background {
+  background-color: #1e1e1e !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #6d6d6d !important;
+  font-size: 12px !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .simple-editor-container {
+    margin: 0.25rem 0;
+  }
+  
+  .simple-editor-container.expanded {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+}
+
+.code-textarea::placeholder {
+  color: #6d6d6d;
+} 

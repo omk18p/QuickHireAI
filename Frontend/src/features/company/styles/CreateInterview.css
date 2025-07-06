@@ -1,0 +1,251 @@
+body, .create-interview-bg, .create-interview-container {
+  background: #fff !important;
+  /* Remove any gradient or blue-green backgrounds */
+}
+
+/* If there is a specific class for the background gradient, override it here */
+.create-interview-bg {
+  background: #fff !important;
+  background-image: none !important;
+}
+
+/* Optionally, add a subtle border or shadow to the form container for clarity */
+.create-interview-form-container {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 2.5rem 2rem;
+}
+
+.create-interview-white-bg, .create-interview-page {
+  background: #fff !important;
+  background-image: none !important;
+  min-height: 100vh;
+  width: calc(100vw - 280px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0;
+}
+
+.create-interview {
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 2.5rem 2rem;
+}
+
+.create-interview h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  position: relative;
+}
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto 3rem;
+  position: relative;
+  max-width: 800px;
+  padding: 0 2rem;
+}
+
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #e2e8f0;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.step {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.step span {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.step.active span {
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.step p {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.step.active p {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Form Steps */
+.form-step {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  margin-bottom: 2rem;
+  animation: fadeIn 0.3s ease;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  color: #1e293b;
+  background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Roles and Skills Section */
+.selected-roles {
+  margin-top: 2rem;
+}
+
+.selected-roles h3 {
+  color: #1e293b;
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.role-section {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.role-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.role-section h4 {
+  color: #1e293b;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.skill-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: #ffffff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.skill-checkbox:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.skill-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+} 

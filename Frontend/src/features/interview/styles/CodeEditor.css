@@ -1,0 +1,39 @@
+.code-editor {
+  margin: 1rem 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #1e1e1e;
+  overflow: hidden;
+}
+
+.editor-header {
+  background: #2d2d2d;
+  padding: 8px;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.language-selector {
+  background: #3d3d3d;
+  color: white;
+  border: 1px solid #4d4d4d;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.code-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 1rem;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border: none;
+  resize: vertical;
+}
+
+.code-textarea:focus {
+  outline: none;
+  border: none;
+} 

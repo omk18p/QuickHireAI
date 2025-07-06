@@ -1,0 +1,107 @@
+.interviews-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.interviews-section h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 2rem;
+}
+
+.interviews-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.interview-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.interview-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.company-info h3 {
+  color: var(--text-color);
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.company-info p {
+  color: var(--light-text);
+}
+
+.interview-details {
+  text-align: center;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.status.completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--secondary-color);
+}
+
+.status.pending {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+}
+
+.interview-actions button {
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.start-btn {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+}
+
+.view-btn {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .interview-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .interview-actions {
+    width: 100%;
+  }
+
+  .interview-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+} 

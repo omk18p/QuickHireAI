@@ -1,0 +1,275 @@
+.skills-selection-container {
+  max-width: 800px;
+  margin: 1rem auto;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.skills-selection-container h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.skills-selection-container > p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.skill-category {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.category-title, .skill-category h2, .skill-category h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.skill-button {
+  padding: 0.35rem 0.5rem;
+  min-width: 0;
+  height: 28px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  gap: 0.3rem;
+}
+
+.skill-button:hover {
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.skill-button.selected {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.skill-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-button.selected .skill-name {
+  color: white;
+}
+
+.skill-icon {
+  font-size: 1rem;
+  min-width: 12px;
+}
+
+.skills-footer {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.start-button {
+  padding: 0.625rem 1.25rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.start-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.start-button:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .skills-selection {
+    padding: 0.5rem;
+  }
+  .skills-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.25rem;
+  }
+  .skill-button {
+    height: 24px;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.3rem;
+  }
+  .skill-name {
+    font-size: 0.7rem;
+  }
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-content {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.loading-content h2 {
+  color: #1a365d;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.loading-content p {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.skills-selection {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.selection-info {
+  text-align: center;
+  color: #4a5568;
+  margin-bottom: 2rem;
+}
+
+.skill-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+}
+
+.skill-checkbox:hover {
+  background: #f9fafb;
+  border-color: #3b82f6;
+}
+
+.skill-checkbox input[type="checkbox"] {
+  margin-right: 0.75rem;
+}
+
+.skill-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.start-button {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.start-button:hover {
+  background: #3182ce;
+}
+
+.start-button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-content {
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3182ce;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 

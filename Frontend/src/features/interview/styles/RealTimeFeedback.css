@@ -1,0 +1,95 @@
+.feedback-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.score-section {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.score-section h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.analysis-section {
+  margin-bottom: 1.5rem;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.metric span {
+  font-weight: 600;
+  color: #374151;
+}
+
+.progress-bar {
+  width: 200px;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+  transition: width 0.3s ease;
+}
+
+.feedback-text {
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.feedback-text h4 {
+  color: #0369a1;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.feedback-text p {
+  color: #0c4a6e;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.real-time-feedback {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.feedback-icon {
+  color: #3b82f6;
+  font-size: 1.2rem;
+}
+
+.feedback-content {
+  color: #374151;
+  line-height: 1.5;
+} 
