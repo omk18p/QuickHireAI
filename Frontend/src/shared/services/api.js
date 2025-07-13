@@ -1,7 +1,11 @@
 import axios from 'axios';
+import { getApiBaseUrl, logApiConfig } from '../config/api.js';
+
+// Log the current API configuration for debugging
+logApiConfig();
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api', // Updated to match backend port
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   },
