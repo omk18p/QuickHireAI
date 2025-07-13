@@ -2,8 +2,8 @@
 // Update these URLs based on your deployment
 
 export const API_CONFIG = {
-  // Replace with your actual Render backend URL
-  RENDER_BACKEND_URL: 'https://your-render-backend.onrender.com',
+  // Your actual Render backend URL
+  RENDER_BACKEND_URL: 'https://quickhireai.onrender.com',
   LOCAL_BACKEND_URL: 'http://localhost:5001',
   
   // Your Vercel frontend URL
