@@ -65,14 +65,18 @@ const getFallbackQuestion = (skill, previousQuestions = []) => {
   };
 };
 
-const generateQuestion = async (skill, previousQuestions = [], questionIndex = 0) => {
+const generateQuestion = async (skill, previousQuestions = [], questionIndex = 0, customPrompt = null) => {
   try {
     console.log('Generating question for skill:', skill);
     console.log('Previous questions:', previousQuestions);
 
-    // Only 1 out of 5 questions should be a code/coding/SQL question
-    const isCodeQuestion = questionIndex === 2; // e.g., 3rd question is code/SQL
-    const prompt = isCodeQuestion ?
+    // Use custom prompt if provided (for follow-up questions)
+    if (customPrompt) {
+      const prompt = customPrompt;
+    } else {
+      // Only 1 out of 5 questions should be a code/coding/SQL question
+      const isCodeQuestion = questionIndex === 2; // e.g., 3rd question is code/SQL
+      const prompt = isCodeQuestion ?
       `Generate a direct, realistic technical interview question for the skill: ${skill}.
 The question should:
 - Require the candidate to write a code snippet or SQL query (choose the most relevant for the skill).
@@ -109,6 +113,7 @@ Return only the JSON object without markdown:
   "category": "fundamentals/concepts/principles",
   "expectedKeyPoints": ["2-3 key discussion points"]
 }`;
+    }
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -380,8 +385,71 @@ const generateOverallFeedback = (evaluation) => {
   }
 };
 
+// Function to generate follow-up questions
+const generateFollowUpQuestion = async (originalQuestion, userAnswer, answerQuality) => {
+  try {
+    const prompt = `Based on this interview exchange:
+    
+Original Question: "${originalQuestion.question}"
+User's Answer: "${userAnswer}"
+Answer Quality Score: ${answerQuality.score}/10
+
+Generate a follow-up question that:
+- Is specific to the user's answer
+- Probes deeper into the topic
+- Asks for clarification, examples, or practical implementation
+- Is appropriate for the skill: ${originalQuestion.topic}
+
+Return only the JSON object without markdown:
+{
+  "question": "follow-up question",
+  "topic": "${originalQuestion.topic}",
+  "difficulty": "medium",
+  "type": "follow-up",
+  "originalQuestionId": "${originalQuestion.id}"
+}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Clean the response text
+    const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
+    
+    try {
+      const followUpQuestion = JSON.parse(jsonStr);
+      
+      // Validate required fields
+      if (!followUpQuestion.question || !followUpQuestion.topic) {
+        throw new Error('Invalid follow-up question format');
+      }
+
+      return followUpQuestion;
+    } catch (e) {
+      console.error('Failed to parse follow-up question response:', e);
+      return {
+        question: `Can you provide a practical example of this concept in ${originalQuestion.topic}?`,
+        topic: originalQuestion.topic,
+        difficulty: 'medium',
+        type: 'follow-up',
+        originalQuestionId: originalQuestion.id
+      };
+    }
+  } catch (error) {
+    console.error('Error generating follow-up question:', error);
+    return {
+      question: `Can you elaborate on your answer about ${originalQuestion.topic}?`,
+      topic: originalQuestion.topic,
+      difficulty: 'medium',
+      type: 'follow-up',
+      originalQuestionId: originalQuestion.id
+    };
+  }
+};
+
 module.exports = {
   generateQuestion,
+  generateFollowUpQuestion,
   analyzeAnswer,
   generateFinalEvaluation,
   getFallbackQuestion,

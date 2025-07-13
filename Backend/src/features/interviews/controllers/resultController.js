@@ -8,7 +8,7 @@ const activeInterviews = require('./questionController').activeInterviews;
 // Process answer and analyze
 const processAnswer = async (req, res) => {
   try {
-    const { interviewCode, answer, skipped = false, videoData } = req.body;
+    const { interviewCode, answer, question, skipped = false, videoData } = req.body;
     
     console.log('--- Incoming answer submission ---');
     console.log('interviewCode:', interviewCode);
@@ -31,7 +31,7 @@ const processAnswer = async (req, res) => {
     
     // Use answers.length as the current question index
     const currentIndex = interview.answers.length;
-    const currentQuestion = `Question ${currentIndex}`;
+    const currentQuestion = question || `Question ${currentIndex}`;
     const transcript = answer || '';
     const code = interviewCode;
     const isFinalQuestion = currentIndex >= interview.totalQuestions;
@@ -73,15 +73,17 @@ const processAnswer = async (req, res) => {
     }
 
     // Store answer and analysis with confidence score
-    interview.answers.push({
+    const storedAnswer = {
       question: currentQuestion,
       answer: transcript,
       code: code,
       analysis: analysis,
       confidenceScore: confidenceScore,
-      facialAnalysis: facialAnalysis
-    });
-    console.log('Answer stored in interview.answers:', interview.answers[interview.answers.length - 1]);
+      facialAnalysis: facialAnalysis,
+      questionId: question?.id || `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    };
+    interview.answers.push(storedAnswer);
+    console.log('Answer stored in interview.answers:', storedAnswer);
 
     // Calculate running average including confidence score
     const totalScore = interview.answers.reduce((sum, ans) => {
@@ -91,41 +93,73 @@ const processAnswer = async (req, res) => {
     }, 0);
     interview.currentScore = totalScore / interview.answers.length;
 
-    // If we've reached totalQuestions, end the interview and store results
-    if (interview.answers.length >= interview.totalQuestions) {
-      interview.status = 'completed';
-      const finalEvaluation = await geminiService.generateFinalEvaluation(interview.answers);
-      
-      // Store mock interview results in database for company viewing
-      if (interviewCode.startsWith('mock-')) {
-        await storeMockInterviewResults(interviewCode, interview, finalEvaluation);
+    // Check if we should generate a follow-up question based on answer quality
+    let isFollowUp = false;
+    let nextQuestion = null;
+    
+    // Only generate follow-up if answer quality is poor (score < 8) and we haven't reached total questions
+    if (analysis.score < 8 && interview.answers.length < interview.totalQuestions) {
+      try {
+        const followUpQuestion = await geminiService.generateFollowUpQuestion(
+          question || { question: currentQuestion, topic: interview.skills[currentIndex] },
+          transcript,
+          analysis
+        );
+        
+        if (followUpQuestion) {
+          nextQuestion = {
+            ...followUpQuestion,
+            id: Math.random().toString(36).substr(2, 9),
+            skill: followUpQuestion.topic,
+            questionNumber: currentIndex + 1,
+            isFollowUp: true
+          };
+          isFollowUp = true;
+          console.log('Generated follow-up question:', nextQuestion);
+        }
+      } catch (error) {
+        console.error('Error generating follow-up question:', error);
       }
-      
-      return res.json({
-        success: true,
-        evaluation: finalEvaluation,
-        isComplete: true,
-        finalScore: interview.currentScore
-      });
+    }
+    
+    // If no follow-up was generated, check if we've reached total questions
+    if (!isFollowUp) {
+      if (interview.answers.length >= interview.totalQuestions) {
+        interview.status = 'completed';
+        const finalEvaluation = await geminiService.generateFinalEvaluation(interview.answers);
+        
+        // Store mock interview results in database for company viewing
+        if (interviewCode.startsWith('mock-')) {
+          await storeMockInterviewResults(interviewCode, interview, finalEvaluation);
+        }
+        
+        return res.json({
+          success: true,
+          evaluation: finalEvaluation,
+          isComplete: true,
+          finalScore: interview.currentScore
+        });
+      }
     }
 
-    // Generate next question
-    const nextSkill = interview.skills[currentIndex];
-    const previousQuestions = interview.questions?.map(q => q.question) || [];
-    let nextQuestion;
-    try {
-      nextQuestion = await geminiService.generateQuestion(nextSkill, previousQuestions);
-      nextQuestion = {
-        ...nextQuestion,
-        id: Math.random().toString(36).substr(2, 9),
-        skill: nextSkill,
-        questionNumber: currentIndex + 1
-      };
-      interview.questions.push(nextQuestion);
-    } catch (error) {
-      console.error('Error generating next question:', error);
-      nextQuestion = getFallbackQuestion(nextSkill);
-      interview.questions.push(nextQuestion);
+    // Generate next question if no follow-up was generated
+    if (!nextQuestion) {
+      const nextSkill = interview.skills[currentIndex];
+      const previousQuestions = interview.questions?.map(q => q.question) || [];
+      try {
+        nextQuestion = await geminiService.generateQuestion(nextSkill, previousQuestions);
+        nextQuestion = {
+          ...nextQuestion,
+          id: Math.random().toString(36).substr(2, 9),
+          skill: nextSkill,
+          questionNumber: currentIndex + 1
+        };
+        interview.questions.push(nextQuestion);
+      } catch (error) {
+        console.error('Error generating next question:', error);
+        nextQuestion = getFallbackQuestion(nextSkill);
+        interview.questions.push(nextQuestion);
+      }
     }
 
     res.json({
@@ -136,6 +170,7 @@ const processAnswer = async (req, res) => {
         facialAnalysis: facialAnalysis
       },
       nextQuestion,
+      isFollowUp,
       progress: {
         current: currentIndex + 1,
         total: interview.totalQuestions
@@ -460,6 +495,92 @@ const analyzeFace = async (req, res) => {
   }
 };
 
+// Report suspicious activity during interview
+const reportActivity = async (req, res) => {
+  try {
+    const { interviewCode, reportData } = req.body;
+    
+    console.log('=== SUSPICIOUS ACTIVITY REPORT ===');
+    console.log('Interview Code:', interviewCode);
+    console.log('Report Data:', reportData);
+    
+    // Get interview session
+    const interview = activeInterviews.get(interviewCode);
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview session not found'
+      });
+    }
+    
+    // Store suspicious activity in interview session
+    if (!interview.suspiciousActivities) {
+      interview.suspiciousActivities = [];
+    }
+    
+    interview.suspiciousActivities.push({
+      ...reportData,
+      timestamp: Date.now()
+    });
+    
+    // Calculate activity risk level
+    const activityCount = interview.suspiciousActivities.length;
+    const tabSwitchCount = reportData.tabSwitchCount || 0;
+    
+    let riskLevel = 'low';
+    if (activityCount > 5 || tabSwitchCount > 3) {
+      riskLevel = 'high';
+    } else if (activityCount > 2 || tabSwitchCount > 1) {
+      riskLevel = 'medium';
+    }
+    
+    // Update interview with risk assessment
+    interview.activityRiskLevel = riskLevel;
+    interview.lastActivityReport = Date.now();
+    
+    console.log('Activity risk level:', riskLevel);
+    console.log('Total suspicious activities:', activityCount);
+    
+    // Store in database for company review
+    if (interviewCode && !interviewCode.startsWith('mock-')) {
+      try {
+        const dbInterview = await Interview.findOne({ interviewCode });
+        if (dbInterview) {
+          const candidate = dbInterview.candidates.find(c => c.code === interviewCode);
+          if (candidate) {
+            if (!candidate.activityReports) {
+              candidate.activityReports = [];
+            }
+            candidate.activityReports.push({
+              riskLevel,
+              suspiciousActivities: interview.suspiciousActivities,
+              tabSwitchCount,
+              timestamp: Date.now()
+            });
+            await dbInterview.save();
+          }
+        }
+      } catch (dbError) {
+        console.error('Error saving activity report to database:', dbError);
+      }
+    }
+    
+    res.json({
+      success: true,
+      riskLevel,
+      message: 'Activity report recorded successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error reporting activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to report activity',
+      details: error.message
+    });
+  }
+};
+
 module.exports = {
   processAnswer,
   endInterview,
@@ -467,5 +588,6 @@ module.exports = {
   getMockInterviewResults,
   submitInterviewResults,
   submitAllAnswers,
-  analyzeFace
+  analyzeFace,
+  reportActivity
 }; 

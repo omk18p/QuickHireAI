@@ -30,6 +30,7 @@ module.exports = {
   submitInterviewResults: resultController.submitInterviewResults,
   submitAllAnswers: resultController.submitAllAnswers,
   analyzeFace: resultController.analyzeFace,
+  reportActivity: resultController.reportActivity,
   
   // Test endpoint for authentication
   testAuth: (req, res) => {

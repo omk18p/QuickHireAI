@@ -131,5 +131,6 @@ router.get('/mock-results', authenticateToken, interviewController.getMockInterv
 router.post('/submit-results', authenticateToken, interviewController.submitInterviewResults);
 router.post('/submit-all-answers', interviewController.submitAllAnswers);
 router.post('/analyze-face', interviewController.analyzeFace);
+router.post('/report-activity', interviewController.reportActivity);
 
 module.exports = router; 

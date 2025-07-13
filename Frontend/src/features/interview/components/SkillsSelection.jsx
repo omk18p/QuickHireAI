@@ -75,6 +75,7 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
   const [error, setError] = useState(null);
 
   const toggleSkill = (skill) => {
+    console.log('Toggling skill:', skill); // Debug log
     setSelectedSkills(prev => {
       if (prev.includes(skill)) {
         return prev.filter(s => s !== skill);
@@ -166,7 +167,10 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
                     <button
                       key={id}
                       className={`skill-button ${selectedSkills.includes(name) ? 'selected' : ''}`}
-                      onClick={() => toggleSkill(name)}
+                      onClick={() => {
+                        console.log('Button clicked for skill:', name);
+                        toggleSkill(name);
+                      }}
                     >
                       <span className="skill-icon">{icon}</span>
                       <span className="skill-name">{name}</span>

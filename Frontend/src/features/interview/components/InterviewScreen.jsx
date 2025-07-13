@@ -7,6 +7,9 @@ import RealTimeFeedback from './RealTimeFeedback';
 import FinalEvaluation from './FinalEvaluation';
 import speechRecognitionService from '../services/speechRecognitionService';
 import CodeEditor from './CodeEditor';
+import TechQuestionTypes from './TechQuestionTypes';
+import SuspiciousActivityMonitor from './SuspiciousActivityMonitor';
+import TabMonitoringService from '../services/tabMonitoringService';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const InterviewScreen = (props) => {
@@ -37,6 +40,13 @@ const InterviewScreen = (props) => {
   const [recordingError, setRecordingError] = useState(null);
   const [skipError, setSkipError] = useState(null);
   const [hasSavedCompletion, setHasSavedCompletion] = useState(false);
+  const [isFollowUpQuestion, setIsFollowUpQuestion] = useState(false);
+  const [followUpCount, setFollowUpCount] = useState(0);
+  const [selectedQuestionType, setSelectedQuestionType] = useState('concepts');
+  const [tabMonitoringService, setTabMonitoringService] = useState(null);
+  const [suspiciousActivities, setSuspiciousActivities] = useState([]);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [isMonitoringActive, setIsMonitoringActive] = useState(false);
 
   useEffect(() => {
     const initializeInterview = async () => {
@@ -200,7 +210,7 @@ const InterviewScreen = (props) => {
         return;
       }
 
-      const { evaluation, nextQuestion } = response.data;
+      const { evaluation, nextQuestion, isFollowUp } = response.data;
       
       // Store the answer
       const newAnswer = {
@@ -208,7 +218,8 @@ const InterviewScreen = (props) => {
         answer: answer.trim(),
         code,
         evaluation,
-        questionNumber: questionIndex + 1
+        questionNumber: questionIndex + 1,
+        isFollowUp: isFollowUpQuestion
       };
       
       console.log('Storing new answer:', newAnswer);
@@ -218,7 +229,18 @@ const InterviewScreen = (props) => {
       // Handle next question
       if (nextQuestion) {
         console.log('Moving to next question:', nextQuestion);
-        setQuestionIndex(prev => prev + 1);
+        
+        // Check if this is a follow-up question
+        if (isFollowUp) {
+          setIsFollowUpQuestion(true);
+          setFollowUpCount(prev => prev + 1);
+          console.log('This is a follow-up question');
+        } else {
+          setIsFollowUpQuestion(false);
+          setFollowUpCount(0);
+          setQuestionIndex(prev => prev + 1);
+        }
+        
         setCurrentQuestion(nextQuestion);
         setTranscript('');
         setInterimTranscript('');
@@ -299,6 +321,60 @@ const InterviewScreen = (props) => {
       setSkipError('Failed to skip question. Please try again.');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Handle question type change
+  const handleQuestionTypeChange = (questionType) => {
+    setSelectedQuestionType(questionType);
+    console.log('Question type changed to:', questionType);
+  };
+
+  // Initialize tab monitoring
+  useEffect(() => {
+    if (!tabMonitoringService) {
+      const monitoringService = new TabMonitoringService();
+      
+      monitoringService.setCallbacks({
+        onSuspiciousActivity: (activity) => {
+          setSuspiciousActivities(prev => [...prev, activity]);
+          console.log('Suspicious activity detected:', activity);
+        },
+        onTabSwitch: (data) => {
+          setTabSwitchCount(data.count);
+          console.log('Tab switch detected:', data);
+        },
+        onInactivity: (data) => {
+          console.log('Inactivity detected:', data);
+        }
+      });
+      
+      setTabMonitoringService(monitoringService);
+      setIsMonitoringActive(true);
+    }
+
+    // Cleanup monitoring service on unmount
+    return () => {
+      if (tabMonitoringService) {
+        tabMonitoringService.destroy();
+      }
+    };
+  }, [tabMonitoringService]);
+
+  // Handle activity reporting
+  const handleActivityReport = async (reportData) => {
+    try {
+      console.log('Reporting suspicious activity:', reportData);
+      
+      // Send report to backend
+      await api.post('/interviews/report-activity', {
+        interviewCode,
+        reportData
+      });
+      
+      console.log('Activity report sent successfully');
+    } catch (error) {
+      console.error('Error reporting activity:', error);
     }
   };
 
@@ -391,15 +467,63 @@ const InterviewScreen = (props) => {
     /sql|query|code|program|function|algorithm|cpp|java|python|javascript/i.test(currentQuestion.question || currentQuestion.text)
   );
   return (
-    <div style={{ minHeight: '100vh', width: '100vw', background: 'linear-gradient(120deg, #f8fafc 60%, #e0e7ef 100%)', fontFamily: 'Inter, Roboto, Arial, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      width: '100vw', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+      fontFamily: 'Inter, Roboto, Arial, sans-serif', 
+      display: 'flex', 
+      flexDirection: 'column',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Background Effects */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'url("data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><defs><pattern id=\'grain\' width=\'100\' height=\'100\' patternUnits=\'userSpaceOnUse\'><circle cx=\'50\' cy=\'50\' r=\'1\' fill=\'rgba(255,255,255,0.1)\'/></pattern></defs><rect width=\'100\' height=\'100\' fill=\'url(%23grain)\'/></svg>")',
+        opacity: 0.3,
+        pointerEvents: 'none',
+        zIndex: -2
+      }}></div>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `
+          radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05) 0%, transparent 50%)
+        `,
+        animation: 'float 20s ease-in-out infinite',
+        pointerEvents: 'none',
+        zIndex: -2
+      }}></div>
       {/* App Bar */}
       
       {/* Main Content */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: 'calc(100vh - 64px - 48px)', padding: '2.5rem 0 1.5rem 0' }}>
+      <main style={{ 
+        flex: 1, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        width: '100%', 
+        minHeight: 'calc(100vh - 64px - 48px)', 
+        padding: '2.5rem 0 1.5rem 0',
+        position: 'relative',
+        zIndex: 10
+      }}>
         <div className="interview-main-card" style={{
-          background: '#fff',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
           borderRadius: 24,
-          boxShadow: '0 8px 40px rgba(30,41,59,0.13)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 20px rgba(102, 126, 234, 0.3)',
           padding: 0,
           minWidth: 280,
           maxWidth: 900,
@@ -410,6 +534,7 @@ const InterviewScreen = (props) => {
           animation: 'fadeIn 0.8s',
           overflow: 'hidden',
           position: 'relative',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
           {/* Left Panel: Question/Answer */}
           <div style={{
@@ -445,12 +570,56 @@ const InterviewScreen = (props) => {
             </div>
             {hasQuestion ? (
               <>
+                {/* Follow-up Question Indicator */}
+                {isFollowUpQuestion && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.3)'
+                  }}>
+                    <span style={{ fontSize: '1.1rem' }}>🔄</span>
+                    Follow-up Question {followUpCount > 0 ? `(${followUpCount})` : ''}
+                  </div>
+                )}
                 <h2 className="question-text" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1e293b', marginBottom: 12 }}>{currentQuestion.question || currentQuestion.text}</h2>
                 <div className="question-meta" style={{ marginBottom: 10 }}>
                   {currentQuestion.topic && <span className="topic-badge">{currentQuestion.topic}</span>}
                   {currentQuestion.difficulty && <span className="difficulty-badge">{currentQuestion.difficulty}</span>}
                   {currentQuestion.duration && <span className="duration-text">{currentQuestion.duration} sec</span>}
+                  {isFollowUpQuestion && <span className="follow-up-badge" style={{
+                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                    color: '#fff',
+                    padding: '4px 12px',
+                    borderRadius: '12px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600
+                  }}>Follow-up</span>}
                 </div>
+                
+                {/* Tech Question Types */}
+                {!isFollowUpQuestion && (
+                  <TechQuestionTypes 
+                    currentQuestion={currentQuestion}
+                    onQuestionTypeChange={handleQuestionTypeChange}
+                  />
+                )}
+                
+                {/* Suspicious Activity Monitor */}
+                <SuspiciousActivityMonitor
+                  isActive={isMonitoringActive}
+                  suspiciousActivities={suspiciousActivities}
+                  tabSwitchCount={tabSwitchCount}
+                  onActivityReport={handleActivityReport}
+                />
+                
                 {/* Code Editor for code/SQL questions */}
                 {isCodeQuestion && (
                   <div style={{ marginTop: 10, marginBottom: 10 }}>
@@ -566,13 +735,28 @@ const InterviewScreen = (props) => {
         </div>
       </main>
       {/* Footer */}
-      <footer style={{ width: '100%', textAlign: 'center', padding: '1.2rem 0 0.7rem 0', color: '#64748b', fontSize: 15, background: 'transparent', letterSpacing: '0.2px' }}>
+      <footer style={{ 
+        width: '100%', 
+        textAlign: 'center', 
+        padding: '1.2rem 0 0.7rem 0', 
+        color: 'rgba(255, 255, 255, 0.9)', 
+        fontSize: 15, 
+        background: 'transparent', 
+        letterSpacing: '0.2px',
+        position: 'relative',
+        zIndex: 10,
+        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+      }}>
         &copy; {new Date().getFullYear()} QuickHire AI &mdash; Elevate Your Interview Experience
       </footer>
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: none; }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(180deg); }
         }
         .main-card:hover { box-shadow: 0 12px 40px rgba(30,41,59,0.22) !important; transform: scale(1.01) !important; }
         .record-button, .submit-button, .skip-button {
