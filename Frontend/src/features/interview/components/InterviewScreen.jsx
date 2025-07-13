@@ -10,6 +10,7 @@ import CodeEditor from './CodeEditor';
 import TechQuestionTypes from './TechQuestionTypes';
 import SuspiciousActivityMonitor from './SuspiciousActivityMonitor';
 import TabMonitoringService from '../services/tabMonitoringService';
+import FullscreenGate from './FullscreenGate';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const InterviewScreen = (props) => {
@@ -47,6 +48,7 @@ const InterviewScreen = (props) => {
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isMonitoringActive, setIsMonitoringActive] = useState(false);
+  const [isFullscreenEntered, setIsFullscreenEntered] = useState(false);
 
   useEffect(() => {
     const initializeInterview = async () => {
@@ -361,6 +363,69 @@ const InterviewScreen = (props) => {
     };
   }, [tabMonitoringService]);
 
+  // Monitor fullscreen exit
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fullscreenElement = document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement || 
+                               document.msFullscreenElement;
+      
+      if (!fullscreenElement && isFullscreenEntered) {
+        // Fullscreen was exited during interview
+        console.log('Fullscreen exited during interview');
+        
+        // Show warning
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'fullscreen-exit-warning';
+        warningDiv.innerHTML = `
+          <div class="warning-content">
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-text">Fullscreen mode was exited. Please return to fullscreen for the best interview experience.</span>
+            <button class="warning-dismiss" onclick="this.parentElement.parentElement.remove()">×</button>
+          </div>
+        `;
+        
+        warningDiv.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+          color: white;
+          padding: 12px 16px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+          z-index: 10000;
+          font-family: inherit;
+          font-weight: 600;
+          animation: slideIn 0.3s ease;
+          max-width: 400px;
+        `;
+        
+        document.body.appendChild(warningDiv);
+        
+        // Auto-remove after 8 seconds
+        setTimeout(() => {
+          if (warningDiv.parentElement) {
+            warningDiv.remove();
+          }
+        }, 8000);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [isFullscreenEntered]);
+
   // Handle activity reporting
   const handleActivityReport = async (reportData) => {
     try {
@@ -376,6 +441,12 @@ const InterviewScreen = (props) => {
     } catch (error) {
       console.error('Error reporting activity:', error);
     }
+  };
+
+  // Handle fullscreen entry
+  const handleFullscreenEntered = () => {
+    setIsFullscreenEntered(true);
+    console.log('Fullscreen mode entered');
   };
 
   // Save completion for company-driven interviews
@@ -413,6 +484,13 @@ const InterviewScreen = (props) => {
   }, [isComplete, finalEvaluation, props.isMock, hasSavedCompletion, props.interviewData, location.state, answers]);
 
 
+
+  // Show fullscreen gate if not yet entered
+  if (!isFullscreenEntered) {
+    return (
+      <FullscreenGate onFullscreenEntered={handleFullscreenEntered} />
+    );
+  }
 
   if (isLoading) {
     return (
