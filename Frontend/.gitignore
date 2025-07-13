@@ -7,18 +7,41 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependency directories
+node_modules/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Build outputs
+dist/
+build/
+dist-ssr/
+.next/
+out/
+coverage/
+
+# Local env files (NEVER commit these)
+.env
+.env.*.local
+.env.local
+
+# System files
 .DS_Store
+Thumbs.db
+
+# Editor directories and project settings
+.vscode/
+!.vscode/extensions.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript
+*.tsbuildinfo
+
+# OS-specific
+*.orig
+
+# Optional: ignore test coverage output
+coverage/
