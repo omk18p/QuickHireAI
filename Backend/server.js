@@ -119,11 +119,10 @@ app.use('/api/interviews', apiLimiter);
 
 // Health check endpoint for uptime monitoring
 app.get('/healthcheck', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    time: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+  res.status(200).json({
+    status: "ok",
+    message: "QuickHire AI backend is healthy",
+    time: new Date().toISOString()
   });
 });
 
