@@ -89,7 +89,11 @@ const upload = multer({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5001'],
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:5001',
+    'https://quick-hire-ai.vercel.app'
+  ],
   credentials: true
 }));
 app.use(express.json());
