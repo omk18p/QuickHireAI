@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getApiBaseUrl, logApiConfig } from '../config/api.js';
+import { getApiBaseUrl, logApiConfig } from '../../config/api.js';
 
 // Log the current API configuration for debugging
 logApiConfig();
