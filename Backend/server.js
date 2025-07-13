@@ -5,34 +5,54 @@ const connectDB = require('./src/config/db');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
-// Use the same approach that worked in your scripts
-try {
+// Robust environment variable loading that works on both local and Render
+const loadEnvironmentVariables = () => {
   const envPath = path.join(__dirname, '.env');
-  console.log('Loading .env from:', envPath);
+  console.log('Checking for .env file at:', envPath);
   
-  // Read and parse .env file directly
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const lines = envContent.split('\n');
-  
-  for (const line of lines) {
-    const [key, value] = line.split('=');
-    if (key && value) {
-      process.env[key.trim()] = value.trim();
+  if (fs.existsSync(envPath)) {
+    console.log('✅ Found .env file, loading local environment variables');
+    try {
+      // Read and parse .env file directly
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const lines = envContent.split('\n');
+      
+      for (const line of lines) {
+        if (line.trim() && !line.startsWith('#')) {
+          const [key, ...valueParts] = line.split('=');
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join('=').trim();
+            process.env[key.trim()] = value;
+          }
+        }
+      }
+      console.log('✅ Successfully loaded local .env file');
+    } catch (error) {
+      console.warn('⚠️ Error reading .env file:', error.message);
     }
-  }
-
-  // Verify the API key was loaded
-  if (process.env.GEMINI_API_KEY) {
-    console.log('GEMINI_API_KEY loaded successfully');
-    console.log('Key starts with:', process.env.GEMINI_API_KEY.substring(0, 8));
   } else {
-    throw new Error('GEMINI_API_KEY not found in .env file');
+    console.log('⚠️ .env file not found. Assuming environment variables are set by hosting platform (Render)');
   }
 
-} catch (error) {
-  console.error('Error loading .env file:', error);
-  process.exit(1); // Exit if we can't load the API key
-}
+  // Verify critical environment variables
+  const requiredEnvVars = ['GEMINI_API_KEY', 'MONGODB_URI', 'JWT_SECRET'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.warn('⚠️ Missing environment variables:', missingVars);
+    console.log('Environment check:', {
+      GEMINI_API_KEY_EXISTS: !!process.env.GEMINI_API_KEY,
+      MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
+      JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
+      NODE_ENV: process.env.NODE_ENV
+    });
+  } else {
+    console.log('✅ All required environment variables are present');
+  }
+};
+
+// Load environment variables
+loadEnvironmentVariables();
 
 // Now load other modules
 const express = require('express');
@@ -47,13 +67,15 @@ connectDB();
 // Add detailed debugging
 console.log('Final Environment Check:', {
   GEMINI_API_KEY_EXISTS: !!process.env.GEMINI_API_KEY,
-  GEMINI_API_KEY_VALUE: process.env.GEMINI_API_KEY,
+  GEMINI_API_KEY_STARTS_WITH: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 8) + '...' : 'NOT_SET',
+  MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
+  JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
   NODE_ENV: process.env.NODE_ENV,
   PWD: process.cwd()
 });
 
 const app = express();
-const preferredPort = 5001;
+const preferredPort = process.env.PORT || 5001;
 let port = preferredPort;
 
 // Configure multer for file uploads
@@ -96,6 +118,21 @@ app.get('/api/test', (req, res) => {
   res.json({ 
     success: true, 
     message: 'Server is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Environment check endpoint for debugging
+app.get('/api/env-check', (req, res) => {
+  res.json({
+    success: true,
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? '✅ loaded' : '❌ missing',
+      MONGODB_URI: process.env.MONGODB_URI ? '✅ loaded' : '❌ missing',
+      JWT_SECRET: process.env.JWT_SECRET ? '✅ loaded' : '❌ missing',
+      PORT: process.env.PORT || 'not set'
+    },
     timestamp: new Date().toISOString()
   });
 });
