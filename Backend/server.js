@@ -117,6 +117,16 @@ const apiLimiter = rateLimit({
 app.use('/api/auth', apiLimiter);
 app.use('/api/interviews', apiLimiter);
 
+// Health check endpoint for uptime monitoring
+app.get('/healthcheck', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    time: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Routes
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -136,7 +146,7 @@ app.get('/api/env-check', (req, res) => {
       MONGODB_URI: process.env.MONGODB_URI ? '✅ loaded' : '❌ missing',
       JWT_SECRET: process.env.JWT_SECRET ? '✅ loaded' : '❌ missing',
       PORT: process.env.PORT || 'not set'
-    },
+  },
     timestamp: new Date().toISOString()
   });
 });
