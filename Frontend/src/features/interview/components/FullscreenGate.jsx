@@ -147,24 +147,7 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
             </button>
           )}
           
-          {/* Manual continue button as fallback */}
-          <button 
-            className="continue-anyway-button"
-            onClick={onFullscreenEntered}
-            style={{
-              marginTop: '1rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
-          >
-            Continue Anyway
-          </button>
+
         </div>
         
         <div className="fullscreen-status">
