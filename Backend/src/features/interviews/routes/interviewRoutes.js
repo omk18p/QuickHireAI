@@ -59,20 +59,30 @@ router.get('/:id/questions', (req, res) => {
 router.post('/process-answer', interviewController.processAnswer);
 router.post('/evaluate-answer', async (req, res) => {
   try {
-    const { answer, question, interviewCode, questionNumber } = req.body;
+    const { answer, question, interviewCode, questionNumber, skipped } = req.body;
     
     console.log('Received answer evaluation request:', {
       interviewCode,
       questionNumber,
       hasAnswer: !!answer,
       hasQuestion: !!question,
-      answer: answer.substring(0, 50) + '...' // Log first 50 chars of answer
+      skipped: !!skipped,
+      answer: answer ? answer.substring(0, 50) + '...' : 'empty' // Log first 50 chars of answer
     });
 
-    if (!answer || !question) {
+    // Allow empty answer if question is being skipped
+    if (!question) {
       return res.status(400).json({ 
         success: false,
-        error: 'Answer and question are required'
+        error: 'Question is required'
+      });
+    }
+
+    // Allow empty answer for skipped questions
+    if (!answer && !skipped) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Answer is required unless question is being skipped'
       });
     }
 
