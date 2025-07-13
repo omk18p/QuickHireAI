@@ -117,6 +117,21 @@ const apiLimiter = rateLimit({
 app.use('/api/auth', apiLimiter);
 app.use('/api/interviews', apiLimiter);
 
+// Root endpoint for basic info and cron job compatibility
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "QuickHire AI Backend API",
+    version: "1.0.0",
+    time: new Date().toISOString(),
+    endpoints: {
+      health: "/healthcheck",
+      test: "/api/test",
+      env: "/api/env-check"
+    }
+  });
+});
+
 // Health check endpoint for uptime monitoring
 app.get('/healthcheck', (req, res) => {
   res.status(200).json({
