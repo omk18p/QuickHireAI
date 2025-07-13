@@ -124,41 +124,41 @@ const processAnswer = async (req, res) => {
     
     // If no follow-up was generated, check if we've reached total questions
     if (!isFollowUp) {
-      if (interview.answers.length >= interview.totalQuestions) {
-        interview.status = 'completed';
-        const finalEvaluation = await geminiService.generateFinalEvaluation(interview.answers);
-        
-        // Store mock interview results in database for company viewing
-        if (interviewCode.startsWith('mock-')) {
-          await storeMockInterviewResults(interviewCode, interview, finalEvaluation);
-        }
-        
-        return res.json({
-          success: true,
-          evaluation: finalEvaluation,
-          isComplete: true,
-          finalScore: interview.currentScore
-        });
+    if (interview.answers.length >= interview.totalQuestions) {
+      interview.status = 'completed';
+      const finalEvaluation = await geminiService.generateFinalEvaluation(interview.answers);
+      
+      // Store mock interview results in database for company viewing
+      if (interviewCode.startsWith('mock-')) {
+        await storeMockInterviewResults(interviewCode, interview, finalEvaluation);
+      }
+      
+      return res.json({
+        success: true,
+        evaluation: finalEvaluation,
+        isComplete: true,
+        finalScore: interview.currentScore
+      });
       }
     }
 
     // Generate next question if no follow-up was generated
     if (!nextQuestion) {
-      const nextSkill = interview.skills[currentIndex];
-      const previousQuestions = interview.questions?.map(q => q.question) || [];
-      try {
-        nextQuestion = await geminiService.generateQuestion(nextSkill, previousQuestions);
-        nextQuestion = {
-          ...nextQuestion,
-          id: Math.random().toString(36).substr(2, 9),
-          skill: nextSkill,
-          questionNumber: currentIndex + 1
-        };
-        interview.questions.push(nextQuestion);
-      } catch (error) {
-        console.error('Error generating next question:', error);
-        nextQuestion = getFallbackQuestion(nextSkill);
-        interview.questions.push(nextQuestion);
+    const nextSkill = interview.skills[currentIndex];
+    const previousQuestions = interview.questions?.map(q => q.question) || [];
+    try {
+      nextQuestion = await geminiService.generateQuestion(nextSkill, previousQuestions);
+      nextQuestion = {
+        ...nextQuestion,
+        id: Math.random().toString(36).substr(2, 9),
+        skill: nextSkill,
+        questionNumber: currentIndex + 1
+      };
+      interview.questions.push(nextQuestion);
+    } catch (error) {
+      console.error('Error generating next question:', error);
+      nextQuestion = getFallbackQuestion(nextSkill);
+      interview.questions.push(nextQuestion);
       }
     }
 

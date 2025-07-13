@@ -11,6 +11,7 @@ import TechQuestionTypes from './TechQuestionTypes';
 import SuspiciousActivityMonitor from './SuspiciousActivityMonitor';
 import TabMonitoringService from '../services/tabMonitoringService';
 import FullscreenGate from './FullscreenGate';
+import FullscreenPause from './FullscreenPause';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const InterviewScreen = (props) => {
@@ -49,6 +50,8 @@ const InterviewScreen = (props) => {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isMonitoringActive, setIsMonitoringActive] = useState(false);
   const [isFullscreenEntered, setIsFullscreenEntered] = useState(false);
+  const [isFullscreenPaused, setIsFullscreenPaused] = useState(false);
+  const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
 
   useEffect(() => {
     const initializeInterview = async () => {
@@ -371,17 +374,27 @@ const InterviewScreen = (props) => {
                                document.mozFullScreenElement || 
                                document.msFullscreenElement;
       
+      // Update current fullscreen status
+      setIsCurrentlyFullscreen(!!fullscreenElement);
+      
       if (!fullscreenElement && isFullscreenEntered) {
         // Fullscreen was exited during interview
         console.log('Fullscreen exited during interview');
+        setIsFullscreenPaused(true);
+        
+        // Stop recording if active
+        if (isRecording) {
+          speechRecognitionService.stopRecording();
+          setIsRecording(false);
+        }
         
         // Show warning
         const warningDiv = document.createElement('div');
         warningDiv.className = 'fullscreen-exit-warning';
         warningDiv.innerHTML = `
           <div class="warning-content">
-            <span class="warning-icon">⚠️</span>
-            <span class="warning-text">Fullscreen mode was exited. Please return to fullscreen for the best interview experience.</span>
+            <span class="warning-icon">🚫</span>
+            <span class="warning-text"><strong>INTERVIEW BLOCKED!</strong> Fullscreen mode is MANDATORY to continue.</span>
             <button class="warning-dismiss" onclick="this.parentElement.parentElement.remove()">×</button>
           </div>
         `;
@@ -390,16 +403,17 @@ const InterviewScreen = (props) => {
           position: fixed;
           top: 20px;
           right: 20px;
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
           color: white;
-          padding: 12px 16px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+          padding: 16px 20px;
+          border-radius: 12px;
+          box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
           z-index: 10000;
           font-family: inherit;
-          font-weight: 600;
+          font-weight: 700;
           animation: slideIn 0.3s ease;
-          max-width: 400px;
+          max-width: 450px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
         `;
         
         document.body.appendChild(warningDiv);
@@ -410,6 +424,15 @@ const InterviewScreen = (props) => {
             warningDiv.remove();
           }
         }, 8000);
+      } else if (fullscreenElement && isFullscreenPaused) {
+        // Fullscreen was re-entered
+        console.log('Fullscreen re-entered, resuming interview');
+        setIsFullscreenPaused(false);
+        setIsCurrentlyFullscreen(true);
+      } else if (fullscreenElement && !isCurrentlyFullscreen) {
+        // Fullscreen was entered but we weren't tracking it
+        console.log('Fullscreen detected but not paused, updating status');
+        setIsCurrentlyFullscreen(true);
       }
     };
 
@@ -425,6 +448,26 @@ const InterviewScreen = (props) => {
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, [isFullscreenEntered]);
+
+  // Fallback: Check fullscreen status periodically when paused
+  useEffect(() => {
+    if (isFullscreenPaused) {
+      const interval = setInterval(() => {
+        const fullscreenElement = document.fullscreenElement || 
+                                 document.webkitFullscreenElement || 
+                                 document.mozFullScreenElement || 
+                                 document.msFullscreenElement;
+        
+        if (fullscreenElement && isFullscreenPaused) {
+          console.log('Fallback: Fullscreen detected while paused, resuming interview');
+          setIsFullscreenPaused(false);
+          setIsCurrentlyFullscreen(true);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isFullscreenPaused]);
 
   // Handle activity reporting
   const handleActivityReport = async (reportData) => {
@@ -445,8 +488,64 @@ const InterviewScreen = (props) => {
 
   // Handle fullscreen entry
   const handleFullscreenEntered = () => {
+    console.log('handleFullscreenEntered called');
     setIsFullscreenEntered(true);
-    console.log('Fullscreen mode entered');
+    setIsCurrentlyFullscreen(true);
+    console.log('Fullscreen mode entered - states updated');
+  };
+
+  // Handle fullscreen resume
+  const handleFullscreenResumed = () => {
+    console.log('handleFullscreenResumed called');
+    setIsFullscreenPaused(false);
+    setIsCurrentlyFullscreen(true);
+    console.log('Interview resumed after fullscreen re-entry - states updated');
+  };
+
+  // Handle disabled button clicks
+  const handleDisabledButtonClick = (buttonType) => {
+    if (!isCurrentlyFullscreen) {
+      // Show notification
+      const notification = document.createElement('div');
+      notification.className = 'fullscreen-required-notification';
+      notification.innerHTML = `
+        <div class="notification-content">
+          <span class="notification-icon">🚫</span>
+          <span class="notification-text">Fullscreen first!</span>
+          <button class="notification-dismiss" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; margin-left: 8px;">×</button>
+        </div>
+      `;
+      
+      notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        z-index: 10001;
+        font-family: inherit;
+        font-weight: 700;
+        animation: slideInUp 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        min-width: 200px;
+        text-align: center;
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      }, 3000);
+      
+      console.log(`Button ${buttonType} clicked while not in fullscreen`);
+    }
   };
 
   // Save completion for company-driven interviews
@@ -486,9 +585,25 @@ const InterviewScreen = (props) => {
 
 
   // Show fullscreen gate if not yet entered
+  console.log('InterviewScreen render - isFullscreenEntered:', isFullscreenEntered, 'isFullscreenPaused:', isFullscreenPaused);
+  
   if (!isFullscreenEntered) {
+    console.log('Showing FullscreenGate');
     return (
       <FullscreenGate onFullscreenEntered={handleFullscreenEntered} />
+    );
+  }
+
+  // Show fullscreen pause if interview is paused
+  if (isFullscreenPaused) {
+    console.log('Showing FullscreenPause');
+    return (
+      <FullscreenPause 
+        onFullscreenResumed={handleFullscreenResumed}
+        currentQuestion={currentQuestion}
+        questionIndex={questionIndex}
+        totalQuestions={totalQuestions}
+      />
     );
   }
 
@@ -540,6 +655,7 @@ const InterviewScreen = (props) => {
   }
 
   // Main interview layout
+  console.log('Showing main interview layout');
   const hasQuestion = currentQuestion && (currentQuestion.question || currentQuestion.text);
   const isCodeQuestion = currentQuestion && (
     /sql|query|code|program|function|algorithm|cpp|java|python|javascript/i.test(currentQuestion.question || currentQuestion.text)
@@ -584,6 +700,27 @@ const InterviewScreen = (props) => {
       }}></div>
       {/* App Bar */}
       
+      {/* Fullscreen Warning Banner */}
+      {!isCurrentlyFullscreen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          color: 'white',
+          padding: '0.75rem 1rem',
+          textAlign: 'center',
+          fontWeight: '700',
+          fontSize: '1rem',
+          zIndex: 1000,
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+          animation: 'pulse 2s infinite'
+        }}>
+          🚫 FULLSCREEN REQUIRED - All interview functions are disabled until you enter fullscreen mode
+        </div>
+      )}
+      
       {/* Main Content */}
       <main style={{ 
         flex: 1, 
@@ -594,7 +731,8 @@ const InterviewScreen = (props) => {
         minHeight: 'calc(100vh - 64px - 48px)', 
         padding: '2.5rem 0 1.5rem 0',
         position: 'relative',
-        zIndex: 10
+        zIndex: 10,
+        marginTop: !isCurrentlyFullscreen ? '60px' : '0'
       }}>
         <div className="interview-main-card" style={{
           background: 'rgba(255, 255, 255, 0.95)',
@@ -613,6 +751,8 @@ const InterviewScreen = (props) => {
           overflow: 'hidden',
           position: 'relative',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: !isCurrentlyFullscreen ? 0.7 : 1,
+          filter: !isCurrentlyFullscreen ? 'grayscale(0.3)' : 'none',
         }}>
           {/* Left Panel: Question/Answer */}
           <div style={{
@@ -710,15 +850,22 @@ const InterviewScreen = (props) => {
                     <button
                       className="submit-button"
                       style={{ marginTop: 8, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: 'pointer' }}
-                      onClick={async () => {
-                        setIsProcessing(true);
-                        await submitAnswer(code);
-                        setIsProcessing(false);
+                      onClick={async (e) => {
+                        if (!isCurrentlyFullscreen) {
+                          e.preventDefault();
+                          handleDisabledButtonClick('submit');
+                        } else {
+                          setIsProcessing(true);
+                          await submitAnswer(code);
+                          setIsProcessing(false);
+                        }
                       }}
                       disabled={isProcessing || !code.trim()}
                       aria-label="Submit code answer"
+                      title={!isCurrentlyFullscreen ? 'Fullscreen required to submit' : ''}
                     >
                       Submit Code
+                      {!isCurrentlyFullscreen && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
                     </button>
                   </div>
                 )}
@@ -743,13 +890,59 @@ const InterviewScreen = (props) => {
               borderTop: '1px solid #e5e7eb',
               minHeight: 70,
             }}>
-              <button className={`record-button${isRecording ? ' recording' : ''}`} onClick={isRecording ? stopRecording : startRecording} disabled={isProcessing || !hasQuestion} aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}>
+              <button 
+                className={`record-button${isRecording ? ' recording' : ''}`} 
+                onClick={(e) => {
+                  if (!isCurrentlyFullscreen) {
+                    e.preventDefault();
+                    handleDisabledButtonClick('record');
+                  } else {
+                    isRecording ? stopRecording() : startRecording();
+                  }
+                }} 
+                disabled={isProcessing || !hasQuestion} 
+                aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
+                title={!isCurrentlyFullscreen ? 'Fullscreen required to record' : ''}
+              >
                 {isRecording ? 'Stop Recording' : 'Start Recording'}
+                {!isCurrentlyFullscreen && !isRecording && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
               </button>
-              <button className="skip-button" onClick={skipQuestion} disabled={isProcessing || !hasQuestion} aria-label="Skip this question">Skip Question</button>
+              <button 
+                className="skip-button" 
+                onClick={(e) => {
+                  if (!isCurrentlyFullscreen) {
+                    e.preventDefault();
+                    handleDisabledButtonClick('skip');
+                  } else {
+                    skipQuestion();
+                  }
+                }} 
+                disabled={isProcessing || !hasQuestion} 
+                aria-label="Skip this question"
+                title={!isCurrentlyFullscreen ? 'Fullscreen required to skip' : ''}
+              >
+                Skip Question
+                {!isCurrentlyFullscreen && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
+              </button>
             </div>
             {recordingError && <div className="recording-error">{recordingError}</div>}
             {skipError && <div className="recording-error" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', marginTop: 8 }}>{skipError}</div>}
+            {!isCurrentlyFullscreen && (
+              <div className="fullscreen-warning" style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: 'white',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginTop: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                animation: 'pulse 2s infinite'
+              }}>
+                🚫 All buttons are disabled. Enter fullscreen mode to continue the interview.
+              </div>
+            )}
           </div>
           {/* Divider */}
           <div style={{ width: 2, minHeight: '100%', background: 'linear-gradient(180deg,#e0e7ef 0%,#c7d2fe 100%)', borderRadius: 2, boxShadow: '0 0 8px #c7d2fe44', alignSelf: 'stretch' }}></div>
@@ -832,6 +1025,10 @@ const InterviewScreen = (props) => {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: none; }
         }
+        @keyframes slideInUp {
+          from { opacity: 0; transform: translate(-50%, -40%); }
+          to { opacity: 1; transform: translate(-50%, -50%); }
+        }
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-20px) rotate(180deg); }
@@ -844,6 +1041,31 @@ const InterviewScreen = (props) => {
           filter: brightness(1.08);
           transform: scale(1.04);
           box-shadow: 0 2px 8px #a5b4fc44;
+        }
+        .record-button:disabled, .submit-button:disabled, .skip-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          filter: grayscale(0.5);
+        }
+        .record-button:disabled:hover, .submit-button:disabled:hover, .skip-button:disabled:hover {
+          transform: none;
+          filter: grayscale(0.5);
+        }
+        /* Special styling for buttons when not in fullscreen */
+        .record-button:not(:disabled):not(.recording):not([disabled]) {
+          cursor: pointer;
+        }
+        .skip-button:not(:disabled):not([disabled]) {
+          cursor: pointer;
+        }
+        .submit-button:not(:disabled):not([disabled]) {
+          cursor: pointer;
+        }
+        /* Visual indicator for buttons that require fullscreen */
+        .record-button:not(.recording):not(:disabled):hover,
+        .skip-button:not(:disabled):hover,
+        .submit-button:not(:disabled):hover {
+          box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
         }
         @media (max-width: 900px) {
           .interview-main-card { flex-direction: column !important; min-width: 0 !important; max-width: 100vw !important; width: 99vw !important; }

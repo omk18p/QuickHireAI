@@ -26,7 +26,9 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
       
       if (fullscreenElement) {
         // Fullscreen entered successfully
+        console.log('Fullscreen detected in FullscreenGate, calling onFullscreenEntered');
         setTimeout(() => {
+          console.log('Calling onFullscreenEntered after delay');
           onFullscreenEntered();
         }, 500);
       }
@@ -48,6 +50,7 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
   const requestFullscreen = async () => {
     try {
       setShowInstructions(false);
+      console.log('Requesting fullscreen...');
       
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
@@ -58,6 +61,19 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
       } else if (document.documentElement.msRequestFullscreen) {
         await document.documentElement.msRequestFullscreen();
       }
+      
+      // Fallback: Check if fullscreen was actually entered after a short delay
+      setTimeout(() => {
+        const fullscreenElement = document.fullscreenElement || 
+                                 document.webkitFullscreenElement || 
+                                 document.mozFullScreenElement || 
+                                 document.msFullscreenElement;
+        if (fullscreenElement && !isFullscreen) {
+          console.log('Fallback: Fullscreen detected, calling onFullscreenEntered');
+          onFullscreenEntered();
+        }
+      }, 1000);
+      
     } catch (error) {
       console.error('Error entering fullscreen:', error);
       setShowInstructions(true);
@@ -130,6 +146,25 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
               Exit Fullscreen
             </button>
           )}
+          
+          {/* Manual continue button as fallback */}
+          <button 
+            className="continue-anyway-button"
+            onClick={onFullscreenEntered}
+            style={{
+              marginTop: '1rem',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            Continue Anyway
+          </button>
         </div>
         
         <div className="fullscreen-status">
