@@ -1,12 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/FullscreenPause.css';
 
 const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, totalQuestions }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [pauseTime, setPauseTime] = useState(0);
-  const [suspiciousActivityCount, setSuspiciousActivityCount] = useState(0);
-  const [appSwitchCount, setAppSwitchCount] = useState(0);
+  // --- State initialization ---
+  const getStoredCount = (key) => {
+    const stored = sessionStorage.getItem(key);
+    return stored !== null ? parseInt(stored) : 0;
+  };
+  const [suspiciousActivityCount, setSuspiciousActivityCount] = useState(() => getStoredCount('pauseSuspiciousActivityCount'));
+  const [appSwitchCount, setAppSwitchCount] = useState(() => getStoredCount('pauseAppSwitchCount'));
+
+  const recentlyIncrementedRef = useRef(false);
+  const incrementCountsOnce = () => {
+    if (!recentlyIncrementedRef.current) {
+      setSuspiciousActivityCount(prev => {
+        const newValue = prev + 1;
+        sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+        return newValue;
+      });
+      setAppSwitchCount(prev => {
+        const newValue = prev + 1;
+        sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+        return newValue;
+      });
+      recentlyIncrementedRef.current = true;
+      setTimeout(() => { recentlyIncrementedRef.current = false; }, 500);
+    }
+  };
 
   // Track pause time
   useEffect(() => {
@@ -26,32 +49,22 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
     }
   }, [isFullscreen]);
 
-  // Sync values to sessionStorage for InterviewScreen to read
+  // Always sync suspicious/app switch counts to sessionStorage
   useEffect(() => {
-    // Only update if the values have actually changed to prevent unnecessary updates
-    const currentSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
-    const currentAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
-    
-    if (!currentSuspicious || parseInt(currentSuspicious) !== suspiciousActivityCount) {
-      sessionStorage.setItem('pauseSuspiciousActivityCount', suspiciousActivityCount.toString());
-    }
-    if (!currentAppSwitch || parseInt(currentAppSwitch) !== appSwitchCount) {
-      sessionStorage.setItem('pauseAppSwitchCount', appSwitchCount.toString());
-    }
-  }, [suspiciousActivityCount, appSwitchCount]);
+    sessionStorage.setItem('pauseSuspiciousActivityCount', suspiciousActivityCount.toString());
+  }, [suspiciousActivityCount]);
+  useEffect(() => {
+    sessionStorage.setItem('pauseAppSwitchCount', appSwitchCount.toString());
+  }, [appSwitchCount]);
+
+  // On mount and on resume, always re-sync counts from sessionStorage
+  useEffect(() => {
+    setSuspiciousActivityCount(getStoredCount('pauseSuspiciousActivityCount'));
+    setAppSwitchCount(getStoredCount('pauseAppSwitchCount'));
+  }, []);
 
   // Enhanced application switching detection without intrusive monitoring
   useEffect(() => {
-    // Initialize counters from sessionStorage if they exist
-    const existingSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
-    const existingAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
-    
-    if (existingSuspicious) {
-      setSuspiciousActivityCount(parseInt(existingSuspicious));
-    }
-    if (existingAppSwitch) {
-      setAppSwitchCount(parseInt(existingAppSwitch));
-    }
     
     let lastActiveTime = Date.now();
     let isCurrentlyActive = true;
@@ -73,8 +86,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       } else if (!document.hidden) {
         isCurrentlyActive = true;
         updateActivity();
@@ -87,8 +99,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       } else if (document.hasFocus()) {
         isCurrentlyActive = true;
         updateActivity();
@@ -101,8 +112,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       }
     };
 
@@ -138,7 +148,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
           console.log('🚨 SUSPICIOUS: High keyboard activity detected - possible messaging app');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSuspiciousActivityCount(prev => prev + 1);
+          incrementCountsOnce();
         }
         
         // Detect rapid typing patterns
@@ -146,7 +156,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
           console.log('🚨 SUSPICIOUS: Excessive keyboard activity - possible external app');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSuspiciousActivityCount(prev => prev + 1);
+          incrementCountsOnce();
         }
       }
     };
@@ -157,8 +167,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       }
     };
 
@@ -171,8 +180,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
           console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSuspiciousActivityCount(prev => prev + 1);
-          setAppSwitchCount(prev => prev + 1);
+          incrementCountsOnce();
         }
       }
     };
@@ -193,7 +201,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Multiple indicators suggest overlay application:', indicators);
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
+        incrementCountsOnce();
       }
       
       // Reset counters if user is active
@@ -212,7 +220,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: User appears inactive - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
+        incrementCountsOnce();
       }
       
       // Check for overlay applications less frequently
@@ -236,8 +244,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Window resized - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       }
     };
 
@@ -247,8 +254,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       }
     };
 
@@ -258,8 +264,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSuspiciousActivityCount(prev => prev + 1);
-        setAppSwitchCount(prev => prev + 1);
+        incrementCountsOnce();
       }
     };
 

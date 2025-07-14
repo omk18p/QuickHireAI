@@ -14,15 +14,45 @@ import FullscreenGate from './FullscreenGate';
 import FullscreenPause from './FullscreenPause';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+// Persistent state keys
+const getStorageKey = (code) => `interviewState_${code}`;
+
+// Restore state from sessionStorage if available
+const restoreState = (code) => {
+  try {
+    const raw = sessionStorage.getItem(getStorageKey(code));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+// Save state to sessionStorage
+const saveState = (code, state) => {
+  try {
+    sessionStorage.setItem(getStorageKey(code), JSON.stringify(state));
+  } catch {}
+};
+
+// Clear state from sessionStorage
+const clearState = (code) => {
+  try {
+    sessionStorage.removeItem(getStorageKey(code));
+  } catch {}
+};
+
 const InterviewScreen = (props) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { interviewCode: paramInterviewCode } = useParams();
   const interviewCode = props.interviewCode || paramInterviewCode;
 
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  // --- State initialization ---
+  const restored = restoreState(interviewCode);
+  const [currentQuestion, setCurrentQuestion] = useState(restored?.currentQuestion || null);
+  const [questions, setQuestions] = useState(restored?.questions || []);
+  const [questionIndex, setQuestionIndex] = useState(restored?.questionIndex || 0);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [currentTopic, setCurrentTopic] = useState("");
@@ -36,31 +66,52 @@ const InterviewScreen = (props) => {
   const [allAnswers, setAllAnswers] = useState([]);
   const [finalEvaluation, setFinalEvaluation] = useState(null);
   const [totalQuestions, setTotalQuestions] = useState(5);
-  const [answers, setAnswers] = useState([]);
-  const [skippedQuestions, setSkippedQuestions] = useState([]);
+  const [answers, setAnswers] = useState(restored?.answers || []);
+  const [skippedQuestions, setSkippedQuestions] = useState(restored?.skippedQuestions || []);
   const [recordingStatus, setRecordingStatus] = useState('idle'); // 'idle', 'recording', 'processing'
   const [recordingError, setRecordingError] = useState(null);
   const [skipError, setSkipError] = useState(null);
   const [hasSavedCompletion, setHasSavedCompletion] = useState(false);
-  const [isFollowUpQuestion, setIsFollowUpQuestion] = useState(false);
-  const [followUpCount, setFollowUpCount] = useState(0);
+  const [isFollowUpQuestion, setIsFollowUpQuestion] = useState(restored?.isFollowUpQuestion || false);
+  const [followUpCount, setFollowUpCount] = useState(restored?.followUpCount || 0);
   const [selectedQuestionType, setSelectedQuestionType] = useState('concepts');
   const [tabMonitoringService, setTabMonitoringService] = useState(null);
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isMonitoringActive, setIsMonitoringActive] = useState(false);
   // Use shared monitoring state from pause screen - initialize from sessionStorage
-  const [sharedSuspiciousActivityCount, setSharedSuspiciousActivityCount] = useState(() => {
-    const stored = sessionStorage.getItem('pauseSuspiciousActivityCount');
-    return stored ? parseInt(stored) : 0;
-  });
-  const [sharedAppSwitchCount, setSharedAppSwitchCount] = useState(() => {
-    const stored = sessionStorage.getItem('pauseAppSwitchCount');
-    return stored ? parseInt(stored) : 0;
-  });
+  const getStoredCount = (key) => {
+    const stored = sessionStorage.getItem(key);
+    return stored !== null ? parseInt(stored) : 0;
+  };
+  const [sharedSuspiciousActivityCount, setSharedSuspiciousActivityCount] = useState(() => getStoredCount('pauseSuspiciousActivityCount'));
+  const [sharedAppSwitchCount, setSharedAppSwitchCount] = useState(() => getStoredCount('pauseAppSwitchCount'));
   const [isFullscreenEntered, setIsFullscreenEntered] = useState(false);
   const [isFullscreenPaused, setIsFullscreenPaused] = useState(false);
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
+
+  // --- Save state on relevant changes ---
+  useEffect(() => {
+    if (!interviewCode) return;
+    saveState(interviewCode, {
+      currentQuestion,
+      questions,
+      questionIndex,
+      answers,
+      skippedQuestions,
+      isFollowUpQuestion,
+      followUpCount,
+    });
+  }, [interviewCode, currentQuestion, questions, questionIndex, answers, skippedQuestions, isFollowUpQuestion, followUpCount]);
+
+  // --- On interview start, clear previous state ---
+  useEffect(() => {
+    if (!interviewCode) return;
+    // If this is a new interview (first question, index 0, etc.), clear state
+    if (questionIndex === 0 && answers.length === 0 && (!restored || !restored.questions)) {
+      clearState(interviewCode);
+    }
+  }, [interviewCode]);
 
   useEffect(() => {
     const initializeInterview = async () => {
@@ -113,6 +164,17 @@ const InterviewScreen = (props) => {
           setQuestions(interview.questions);
           setCurrentQuestion(interview.questions[0]);
           setTotalQuestions(interview.totalQuestions);
+          setQuestionIndex(0);
+          setAnswers([]);
+          setSkippedQuestions([]);
+          setIsFollowUpQuestion(false);
+          setFollowUpCount(0);
+          clearState(interviewCode); // <-- clear persistent state on new interview
+          // Always reset suspicious/app switch counts for a new interview
+          sessionStorage.setItem('pauseSuspiciousActivityCount', '0');
+          sessionStorage.setItem('pauseAppSwitchCount', '0');
+          setSharedSuspiciousActivityCount(0);
+          setSharedAppSwitchCount(0);
         } else {
           throw new Error(response.data.error || 'Failed to initialize interview');
         }
@@ -389,16 +451,7 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       } else if (!document.hidden) {
         isCurrentlyActive = true;
         updateActivity();
@@ -411,16 +464,7 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       } else if (document.hasFocus()) {
         isCurrentlyActive = true;
         updateActivity();
@@ -433,16 +477,7 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
     };
 
@@ -478,11 +513,7 @@ const InterviewScreen = (props) => {
           console.log('🚨 SUSPICIOUS: High keyboard activity detected - possible messaging app');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSharedSuspiciousActivityCount(prev => {
-            const newValue = prev + 1;
-            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-            return newValue;
-          });
+          incrementCountsOnce();
         }
         
         // Detect rapid typing patterns
@@ -490,11 +521,7 @@ const InterviewScreen = (props) => {
           console.log('🚨 SUSPICIOUS: Excessive keyboard activity - possible external app');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSharedSuspiciousActivityCount(prev => {
-            const newValue = prev + 1;
-            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-            return newValue;
-          });
+          incrementCountsOnce();
         }
       }
     };
@@ -505,16 +532,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
     };
 
@@ -527,16 +545,7 @@ const InterviewScreen = (props) => {
           console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          setSharedSuspiciousActivityCount(prev => {
-            const newValue = prev + 1;
-            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-            return newValue;
-          });
-          setSharedAppSwitchCount(prev => {
-            const newValue = prev + 1;
-            sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-            return newValue;
-          });
+          incrementCountsOnce();
         }
       }
     };
@@ -557,11 +566,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Multiple indicators suggest overlay application:', indicators);
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
       
       // Reset counters if user is active
@@ -580,11 +585,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: User appears inactive - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
       
       // Check for overlay applications less frequently
@@ -608,16 +609,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Window resized - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
     };
 
@@ -627,16 +619,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
     };
 
@@ -646,16 +629,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        setSharedSuspiciousActivityCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
-          return newValue;
-        });
-        setSharedAppSwitchCount(prev => {
-          const newValue = prev + 1;
-          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
-          return newValue;
-        });
+        incrementCountsOnce();
       }
     };
 
@@ -727,30 +701,57 @@ const InterviewScreen = (props) => {
     };
   }, [isCurrentlyFullscreen, sharedSuspiciousActivityCount, sharedAppSwitchCount]);
 
-  // Ensure counters are preserved when transitioning from pause to interview
+  // On mount and on resume from pause, always re-sync counts from sessionStorage
+  useEffect(() => {
+    const syncCounts = () => {
+      setSharedSuspiciousActivityCount(getStoredCount('pauseSuspiciousActivityCount'));
+      setSharedAppSwitchCount(getStoredCount('pauseAppSwitchCount'));
+    };
+    syncCounts();
+  }, []);
   useEffect(() => {
     if (!isFullscreenPaused && isFullscreenEntered) {
-      // We're back in the interview screen, ensure counters are preserved
-      const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
-      const storedAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
-      
-      if (storedSuspicious) {
-        const currentValue = parseInt(storedSuspicious);
-        if (currentValue !== sharedSuspiciousActivityCount) {
-          console.log('Transition: Syncing suspicious activity count:', sharedSuspiciousActivityCount, '->', currentValue);
-          setSharedSuspiciousActivityCount(currentValue);
-        }
-      }
-      
-      if (storedAppSwitch) {
-        const currentValue = parseInt(storedAppSwitch);
-        if (currentValue !== sharedAppSwitchCount) {
-          console.log('Transition: Syncing app switch count:', sharedAppSwitchCount, '->', currentValue);
-          setSharedAppSwitchCount(currentValue);
-        }
+      setSharedSuspiciousActivityCount(getStoredCount('pauseSuspiciousActivityCount'));
+      setSharedAppSwitchCount(getStoredCount('pauseAppSwitchCount'));
+    }
+  }, [isFullscreenPaused, isFullscreenEntered]);
+
+  // Rehydrate state from sessionStorage when resuming from pause
+  useEffect(() => {
+    if (!isFullscreenPaused && isFullscreenEntered) {
+      // We just resumed from pause, rehydrate state from sessionStorage
+      const restored = restoreState(interviewCode);
+      if (restored) {
+        setCurrentQuestion(restored.currentQuestion || null);
+        setQuestions(restored.questions || []);
+        setQuestionIndex(restored.questionIndex || 0);
+        setAnswers(restored.answers || []);
+        setSkippedQuestions(restored.skippedQuestions || []);
+        setIsFollowUpQuestion(restored.isFollowUpQuestion || false);
+        setFollowUpCount(restored.followUpCount || 0);
       }
     }
-  }, [isFullscreenPaused, isFullscreenEntered, sharedSuspiciousActivityCount, sharedAppSwitchCount]);
+    // Only run when resuming from pause
+    // eslint-disable-next-line
+  }, [isFullscreenPaused, isFullscreenEntered]);
+
+  // Rehydrate suspicious/app switch counts from sessionStorage when resuming from pause
+  useEffect(() => {
+    if (!isFullscreenPaused && isFullscreenEntered) {
+      const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
+      const storedAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
+      if (storedSuspicious !== null) setSharedSuspiciousActivityCount(parseInt(storedSuspicious));
+      if (storedAppSwitch !== null) setSharedAppSwitchCount(parseInt(storedAppSwitch));
+    }
+  }, [isFullscreenPaused, isFullscreenEntered]);
+
+  // Always sync suspicious/app switch counts to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('pauseSuspiciousActivityCount', sharedSuspiciousActivityCount.toString());
+  }, [sharedSuspiciousActivityCount]);
+  useEffect(() => {
+    sessionStorage.setItem('pauseAppSwitchCount', sharedAppSwitchCount.toString());
+  }, [sharedAppSwitchCount]);
 
   // Monitor fullscreen exit
   useEffect(() => {
