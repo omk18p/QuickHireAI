@@ -143,25 +143,6 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
           >
             {isFullscreen ? 'Returning to Interview...' : 'ENTER FULLSCREEN TO CONTINUE'}
           </button>
-          
-          {/* Manual resume button as fallback */}
-          <button 
-            className="manual-resume-button"
-            onClick={onFullscreenResumed}
-            style={{
-              marginTop: '0.75rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
-          >
-            Resume Interview Manually
-          </button>
         </div>
         
         <div className="pause-status">
