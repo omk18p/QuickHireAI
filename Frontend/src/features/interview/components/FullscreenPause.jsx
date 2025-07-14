@@ -13,8 +13,27 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
   const [suspiciousActivityCount, setSuspiciousActivityCount] = useState(() => getStoredCount('pauseSuspiciousActivityCount'));
   const [appSwitchCount, setAppSwitchCount] = useState(() => getStoredCount('pauseAppSwitchCount'));
 
+  // Add suspicious activity logs state and helper
+  const getStoredLogs = () => {
+    try {
+      const raw = sessionStorage.getItem('suspiciousActivityLogs');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+  const [suspiciousActivityLogs, setSuspiciousActivityLogs] = useState(getStoredLogs());
+  const addSuspiciousLog = (message) => {
+    const log = { time: new Date().toLocaleString(), message };
+    setSuspiciousActivityLogs(prev => {
+      const updated = [...prev, log];
+      sessionStorage.setItem('suspiciousActivityLogs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const recentlyIncrementedRef = useRef(false);
-  const incrementCountsOnce = () => {
+  const incrementCountsOnce = (logMessage) => {
     if (!recentlyIncrementedRef.current) {
       setSuspiciousActivityCount(prev => {
         const newValue = prev + 1;
@@ -26,6 +45,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
         return newValue;
       });
+      if (logMessage) addSuspiciousLog(logMessage);
       recentlyIncrementedRef.current = true;
       setTimeout(() => { recentlyIncrementedRef.current = false; }, 500);
     }
@@ -86,7 +106,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Tab switch detected via visibilitychange (document.hidden) [pause screen]');
       } else if (!document.hidden) {
         isCurrentlyActive = true;
         updateActivity();
@@ -99,7 +119,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('App switch detected via focus change (window lost focus) [pause screen]');
       } else if (document.hasFocus()) {
         isCurrentlyActive = true;
         updateActivity();
@@ -112,7 +132,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('App switch detected via blur event [pause screen]');
       }
     };
 
@@ -167,7 +187,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Clipboard change detected (possible app switch) [pause screen]');
       }
     };
 
@@ -180,7 +200,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
           console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          incrementCountsOnce();
+          incrementCountsOnce('Window state change detected (possible app switch) [pause screen]');
         }
       }
     };
@@ -254,7 +274,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Selection change detected (possible app switch) [pause screen]');
       }
     };
 
@@ -264,7 +284,7 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
         console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Context menu opened (possible app switch) [pause screen]');
       }
     };
 

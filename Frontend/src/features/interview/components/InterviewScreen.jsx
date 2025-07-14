@@ -89,6 +89,28 @@ const InterviewScreen = (props) => {
   const [isFullscreenEntered, setIsFullscreenEntered] = useState(false);
   const [isFullscreenPaused, setIsFullscreenPaused] = useState(false);
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
+  const recentlyIncrementedRef = useRef(false);
+
+  // Add at the top of the component
+  const getStoredLogs = () => {
+    try {
+      const raw = sessionStorage.getItem('suspiciousActivityLogs');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+  const [suspiciousActivityLogs, setSuspiciousActivityLogs] = useState(getStoredLogs());
+
+  // Helper to add a log
+  const addSuspiciousLog = (message) => {
+    const log = { time: new Date().toLocaleString(), message };
+    setSuspiciousActivityLogs(prev => {
+      const updated = [...prev, log];
+      sessionStorage.setItem('suspiciousActivityLogs', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // --- Save state on relevant changes ---
   useEffect(() => {
@@ -175,6 +197,8 @@ const InterviewScreen = (props) => {
           sessionStorage.setItem('pauseAppSwitchCount', '0');
           setSharedSuspiciousActivityCount(0);
           setSharedAppSwitchCount(0);
+          sessionStorage.setItem('suspiciousActivityLogs', JSON.stringify([]));
+          setSuspiciousActivityLogs([]);
         } else {
           throw new Error(response.data.error || 'Failed to initialize interview');
         }
@@ -445,13 +469,32 @@ const InterviewScreen = (props) => {
       lastActivityCheck = Date.now();
     };
 
+    // Update incrementCountsOnce to accept a message
+    const incrementCountsOnce = (logMessage) => {
+      if (!recentlyIncrementedRef.current) {
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+        if (logMessage) addSuspiciousLog(logMessage);
+        recentlyIncrementedRef.current = true;
+        setTimeout(() => { recentlyIncrementedRef.current = false; }, 500);
+      }
+    };
+
     const handleVisibilityChange = () => {
       if (document.hidden && isCurrentlyFullscreen) {
         console.log('🚨 SUSPICIOUS: User switched tabs or applications during interview');
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Tab switch detected via visibilitychange (document.hidden)');
       } else if (!document.hidden) {
         isCurrentlyActive = true;
         updateActivity();
@@ -464,7 +507,7 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('App switch detected via focus change (window lost focus)');
       } else if (document.hasFocus()) {
         isCurrentlyActive = true;
         updateActivity();
@@ -477,7 +520,7 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('App switch detected via blur event');
       }
     };
 
@@ -532,7 +575,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Clipboard change detected (possible app switch)');
       }
     };
 
@@ -545,7 +588,7 @@ const InterviewScreen = (props) => {
           console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          incrementCountsOnce();
+          incrementCountsOnce('Window state change detected (possible app switch)');
         }
       }
     };
@@ -609,7 +652,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Window resized - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Window state change detected (possible app switch)');
       }
     };
 
@@ -619,7 +662,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Selection change detected (possible app switch)');
       }
     };
 
@@ -629,7 +672,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Context menu opened (possible app switch)');
       }
     };
 
@@ -975,7 +1018,9 @@ const InterviewScreen = (props) => {
               interviewId, 
               candidateCode,
               finalEvaluation,
-              answers 
+              answers,
+              suspiciousActivityLogs,
+              appSwitchCount: sharedAppSwitchCount
             });
             setHasSavedCompletion(true);
           } catch (err) {
@@ -990,7 +1035,7 @@ const InterviewScreen = (props) => {
     };
     
     saveCompletion();
-  }, [isComplete, finalEvaluation, props.isMock, hasSavedCompletion, props.interviewData, location.state, answers]);
+  }, [isComplete, finalEvaluation, props.isMock, hasSavedCompletion, props.interviewData, location.state, answers, suspiciousActivityLogs, sharedAppSwitchCount]);
 
 
 
@@ -1036,32 +1081,27 @@ const InterviewScreen = (props) => {
   }
 
   if (isComplete && finalEvaluation) {
-    if (props.isMock) {
-      return (
-        <FinalEvaluation 
-          evaluation={finalEvaluation}
-          answers={answers}
-          onRetake={() => navigate('/dashboard')}
-        />
-      );
-    } else {
-      // Company-driven: show completion message only after backend call
-      if (!hasSavedCompletion) {
-        return (
-          <div style={{ maxWidth: 600, margin: '4rem auto', background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(30,41,59,0.10)', padding: '3rem 2rem', textAlign: 'center' }}>
-            <h2 style={{ fontWeight: 900, fontSize: '2.1rem', color: '#1e293b', marginBottom: '1.5rem' }}>Saving your results...</h2>
-            <p style={{ color: '#334155', fontSize: '1.15rem', marginBottom: '2rem' }}>Please wait while we save your interview results.</p>
+    return (
+      <div>
+        <FinalEvaluation evaluation={finalEvaluation} answers={answers} />
+        {/* The FinalEvaluation component already renders the action buttons at the end. Render the Security Monitoring Summary after it. */}
+        <div style={{ maxWidth: 800, margin: '2rem auto', background: '#f8fafc', borderRadius: 12, boxShadow: '0 2px 8px #c7d2fe22', padding: '1.5rem 2rem', marginTop: 32 }}>
+          <h3 style={{ color: '#dc2626', fontWeight: 800, marginBottom: 12 }}>Security Monitoring Summary</h3>
+          <div style={{ marginBottom: 12 }}>
+            <strong>Suspicious Activities:</strong> {sharedSuspiciousActivityCount}<br />
+            <strong>Tab/App Switches:</strong> {sharedAppSwitchCount}
           </div>
-        );
-      }
-      return (
-        <div style={{ maxWidth: 600, margin: '4rem auto', background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(30,41,59,0.10)', padding: '3rem 2rem', textAlign: 'center' }}>
-          <h2 style={{ fontWeight: 900, fontSize: '2.1rem', color: '#1e293b', marginBottom: '1.5rem' }}>Interview Complete</h2>
-          <p style={{ color: '#334155', fontSize: '1.15rem', marginBottom: '2rem' }}>Thank you for completing your interview.<br/>Your results will be reviewed and shared by the company.</p>
-          <button onClick={() => navigate('/dashboard')} style={{ padding: '0.8rem 2.2rem', borderRadius: 10, background: '#2563eb', color: 'white', fontWeight: 700, border: 'none', fontSize: '1.1rem', boxShadow: '0 2px 8px rgba(37,99,235,0.10)' }}>Return to Dashboard</button>
+          <div style={{ maxHeight: 200, overflowY: 'auto', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+            <strong>Suspicious Activity Logs:</strong>
+            <ul style={{ fontSize: '0.98rem', color: '#334155', margin: 0, paddingLeft: 18 }}>
+              {suspiciousActivityLogs.length === 0 ? <li>No suspicious activity detected.</li> : suspiciousActivityLogs.map((log, idx) => (
+                <li key={idx}><span style={{ color: '#64748b' }}>{log.time}:</span> {log.message}</li>
+              ))}
+            </ul>
+          </div>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   // Main interview layout
