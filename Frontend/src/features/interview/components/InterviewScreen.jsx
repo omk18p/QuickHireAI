@@ -765,7 +765,7 @@ const InterviewScreen = (props) => {
           notification.innerHTML = `
             <div class="notification-content">
               <span class="notification-icon">🚫</span>
-              <span class="notification-text">You can’t select text during the interview.</span>
+              <span class="notification-text">You can't select text during the interview.</span>
               <button class="notification-dismiss" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; margin-left: 8px;">×</button>
             </div>
           `;
@@ -1144,7 +1144,7 @@ const InterviewScreen = (props) => {
     saveCompletion();
   }, [isComplete, finalEvaluation, props.isMock, hasSavedCompletion, props.interviewData, location.state, answers, suspiciousActivityLogs, sharedAppSwitchCount]);
 
-
+  const [showLogsModal, setShowLogsModal] = useState(false);
 
   // Show fullscreen gate if not yet entered
   console.log('InterviewScreen render - isFullscreenEntered:', isFullscreenEntered, 'isFullscreenPaused:', isFullscreenPaused);
@@ -1369,70 +1369,199 @@ const InterviewScreen = (props) => {
                     fontWeight: 600
                   }}>Follow-up</span>}
                 </div>
-                {/* Suspicious Activity Monitor - Prominent Position */}
-                <div style={{
-                  marginBottom: '1.5rem',
-                  padding: '1rem',
-                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
-                  border: '2px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
-                }}>
-                  <div style={{
+                {/* Suspicious Activity Monitor - Advanced Modern Look */}
+                <div
+                  className="security-monitor-card"
+                  style={{
+                    marginBottom: '1.5rem',
+                    padding: '1.3rem 1.2rem 1.1rem 1.2rem',
+                    background: 'rgba(255,255,255,0.35)',
+                    backdropFilter: 'blur(10px)',
+                    border: '2.5px solid rgba(59,130,246,0.18)',
+                    borderRadius: '18px',
+                    boxShadow: '0 8px 32px rgba(30,64,175,0.10)',
+                    position: 'relative',
+                    minHeight: 120,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <h3 style={{
-                      margin: 0,
-                      fontSize: '1.1rem',
-                      fontWeight: 700,
-                      color: '#dc2626',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      <span>🔍</span>
-                      Security Monitoring
-                    </h3>
-                    <div style={{
-                      display: 'flex',
-                      gap: '1rem',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        background: 'rgba(255, 255, 255, 0.9)',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(239, 68, 68, 0.3)'
-                      }}>
-                        <span style={{ fontSize: '1.2rem' }}>🚨</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>
-                          Suspicious: {sharedSuspiciousActivityCount}
-                        </span>
-                      </div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        background: 'rgba(255, 255, 255, 0.9)',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(239, 68, 68, 0.3)'
-                      }}>
-                        <span style={{ fontSize: '1.2rem' }}>📱</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>
-                          App Switches: {sharedAppSwitchCount}
-                        </span>
+                    flexDirection: 'column',
+                    gap: '0.7rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 28, color: '#2563eb', filter: 'drop-shadow(0 2px 6px #3b82f655)' }}>🛡️</span>
+                      <span style={{ fontWeight: 800, fontSize: '1.18rem', color: '#1e293b', letterSpacing: '0.2px' }}>Security Monitoring</span>
+                      <span
+                        style={{
+                          marginLeft: 10,
+                          fontSize: 13,
+                          color: '#64748b',
+                          background: 'rgba(59,130,246,0.08)',
+                          borderRadius: 8,
+                          padding: '2px 10px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                        title="We monitor for suspicious activity, app switches, and more."
+                      >ℹ️</span>
+                      <button
+                        style={{
+                          marginLeft: 12,
+                          fontSize: 13,
+                          color: '#2563eb',
+                          background: 'rgba(59,130,246,0.10)',
+                          border: '1.5px solid #2563eb33',
+                          borderRadius: 8,
+                          padding: '2px 14px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'background 0.2s',
+                          boxShadow: '0 1px 4px #a5b4fc22',
+                        }}
+                        onClick={() => setShowLogsModal(true)}
+                        aria-label="Show suspicious logs"
+                      >
+                        Logs
+                      </button>
+                    </div>
+                    {/* Status badge */}
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: sharedSuspiciousActivityCount === 0 && sharedAppSwitchCount === 0 ? '#16a34a' : (sharedSuspiciousActivityCount < 3 && sharedAppSwitchCount < 3 ? '#f59e42' : '#dc2626'),
+                        background: sharedSuspiciousActivityCount === 0 && sharedAppSwitchCount === 0 ? 'rgba(16,185,129,0.13)' : (sharedSuspiciousActivityCount < 3 && sharedAppSwitchCount < 3 ? 'rgba(251,191,36,0.13)' : 'rgba(239,68,68,0.13)'),
+                        borderRadius: 8,
+                        padding: '2.5px 14px',
+                        marginLeft: 8,
+                        letterSpacing: '0.5px',
+                        boxShadow: '0 1px 4px #a5b4fc22',
+                      }}
+                    >
+                      {sharedSuspiciousActivityCount === 0 && sharedAppSwitchCount === 0
+                        ? 'All Clear'
+                        : (sharedSuspiciousActivityCount < 3 && sharedAppSwitchCount < 3 ? 'Warning' : 'Critical')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 2 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Suspicious</span>
+                      <span className={`badge badge-suspicious`} style={{
+                        fontWeight: 800,
+                        fontSize: 20,
+                        color: sharedSuspiciousActivityCount === 0 ? '#16a34a' : (sharedSuspiciousActivityCount < 3 ? '#f59e42' : '#dc2626'),
+                        background: sharedSuspiciousActivityCount === 0 ? 'rgba(16,185,129,0.13)' : (sharedSuspiciousActivityCount < 3 ? 'rgba(251,191,36,0.13)' : 'rgba(239,68,68,0.13)'),
+                        borderRadius: 8,
+                        padding: '2px 18px',
+                        minWidth: 36,
+                        textAlign: 'center',
+                        boxShadow: '0 1px 4px #a5b4fc22',
+                      }}>{sharedSuspiciousActivityCount}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>App Switches</span>
+                      <span className={`badge badge-appswitch`} style={{
+                        fontWeight: 800,
+                        fontSize: 20,
+                        color: sharedAppSwitchCount === 0 ? '#16a34a' : (sharedAppSwitchCount < 3 ? '#f59e42' : '#dc2626'),
+                        background: sharedAppSwitchCount === 0 ? 'rgba(16,185,129,0.13)' : (sharedAppSwitchCount < 3 ? 'rgba(251,191,36,0.13)' : 'rgba(239,68,68,0.13)'),
+                        borderRadius: 8,
+                        padding: '2px 18px',
+                        minWidth: 36,
+                        textAlign: 'center',
+                        boxShadow: '0 1px 4px #a5b4fc22',
+                      }}>{sharedAppSwitchCount}</span>
+                    </div>
+                    {/* Progress bar for suspicion level */}
+                    <div style={{ flex: 1, minWidth: 120, marginLeft: 18, marginRight: 8 }}>
+                      <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>Suspicion Level</div>
+                      <div style={{ width: '100%', height: 13, background: '#e0e7ef', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px #a5b4fc22' }}>
+                        <div style={{
+                          width: `${Math.min((sharedSuspiciousActivityCount + sharedAppSwitchCount) * 20, 100)}%`,
+                          height: '100%',
+                          background: sharedSuspiciousActivityCount + sharedAppSwitchCount === 0 ? 'linear-gradient(90deg,#16a34a 60%,#22d3ee 100%)' : (sharedSuspiciousActivityCount + sharedAppSwitchCount < 3 ? 'linear-gradient(90deg,#fbbf24 60%,#fde68a 100%)' : 'linear-gradient(90deg,#ef4444 60%,#fca5a5 100%)'),
+                          borderRadius: 8,
+                          transition: 'width 0.4s cubic-bezier(0.4,0,0.2,1)',
+                        }} />
                       </div>
                     </div>
                   </div>
-
+                  {/* Last suspicious event log */}
+                  <div style={{ marginTop: 8, fontSize: 13, color: '#334155', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#2563eb', fontSize: 16 }}>📝</span>
+                    <span style={{ color: '#64748b', fontWeight: 700 }}>Last Event:</span>
+                    <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                      {suspiciousActivityLogs && suspiciousActivityLogs.length > 0
+                        ? `${suspiciousActivityLogs[suspiciousActivityLogs.length - 1].message} (${suspiciousActivityLogs[suspiciousActivityLogs.length - 1].time})`
+                        : 'No suspicious activity detected.'}
+                    </span>
+                  </div>
                 </div>
+                {/* Suspicious Logs Modal */}
+                {showLogsModal && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      width: '100vw',
+                      height: '100vh',
+                      background: 'rgba(30,41,59,0.18)',
+                      zIndex: 9999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: 'rgba(255,255,255,0.98)',
+                        borderRadius: 18,
+                        boxShadow: '0 8px 32px rgba(30,64,175,0.18)',
+                        minWidth: 340,
+                        maxWidth: 420,
+                        maxHeight: 480,
+                        padding: '2.2rem 1.5rem 1.5rem 1.5rem',
+                        overflowY: 'auto',
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <button
+                        onClick={() => setShowLogsModal(false)}
+                        style={{
+                          position: 'absolute',
+                          top: 12,
+                          right: 16,
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc2626',
+                          fontSize: 22,
+                          fontWeight: 900,
+                          cursor: 'pointer',
+                        }}
+                        aria-label="Close logs modal"
+                      >×</button>
+                      <h3 style={{ fontWeight: 800, fontSize: '1.25rem', color: '#1e293b', marginBottom: 18, letterSpacing: '0.2px' }}>
+                        Suspicious Activity Logs
+                      </h3>
+                      {suspiciousActivityLogs && suspiciousActivityLogs.length > 0 ? (
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, width: '100%' }}>
+                          {suspiciousActivityLogs.slice().reverse().map((log, idx) => (
+                            <li key={idx} style={{ marginBottom: 14, padding: '0.7rem 0.8rem', background: '#f1f5f9', borderRadius: 10, boxShadow: '0 1px 4px #a5b4fc11' }}>
+                              <div style={{ fontWeight: 700, color: '#2563eb', fontSize: 13, marginBottom: 2 }}>{log.time}</div>
+                              <div style={{ color: '#1e293b', fontWeight: 600, fontSize: 14 }}>{log.message}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div style={{ color: '#64748b', fontWeight: 600, fontSize: 15 }}>No suspicious activity detected.</div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {/* Tech Question Types */}
                 {!isFollowUpQuestion && (
                   <TechQuestionTypes 
