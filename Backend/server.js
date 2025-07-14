@@ -13,11 +13,11 @@ const loadEnvironmentVariables = () => {
   if (fs.existsSync(envPath)) {
     console.log('✅ Found .env file, loading local environment variables');
     try {
-      // Read and parse .env file directly
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const lines = envContent.split('\n');
-      
-      for (const line of lines) {
+  // Read and parse .env file directly
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const lines = envContent.split('\n');
+  
+  for (const line of lines) {
         if (line.trim() && !line.startsWith('#')) {
           const [key, ...valueParts] = line.split('=');
           if (key && valueParts.length > 0) {

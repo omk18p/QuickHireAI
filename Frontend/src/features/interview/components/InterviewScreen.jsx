@@ -8,7 +8,7 @@ import FinalEvaluation from './FinalEvaluation';
 import speechRecognitionService from '../services/speechRecognitionService';
 import CodeEditor from './CodeEditor';
 import TechQuestionTypes from './TechQuestionTypes';
-import SuspiciousActivityMonitor from './SuspiciousActivityMonitor';
+
 import TabMonitoringService from '../services/tabMonitoringService';
 import FullscreenGate from './FullscreenGate';
 import FullscreenPause from './FullscreenPause';
@@ -49,6 +49,15 @@ const InterviewScreen = (props) => {
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isMonitoringActive, setIsMonitoringActive] = useState(false);
+  // Use shared monitoring state from pause screen - initialize from sessionStorage
+  const [sharedSuspiciousActivityCount, setSharedSuspiciousActivityCount] = useState(() => {
+    const stored = sessionStorage.getItem('pauseSuspiciousActivityCount');
+    return stored ? parseInt(stored) : 0;
+  });
+  const [sharedAppSwitchCount, setSharedAppSwitchCount] = useState(() => {
+    const stored = sessionStorage.getItem('pauseAppSwitchCount');
+    return stored ? parseInt(stored) : 0;
+  });
   const [isFullscreenEntered, setIsFullscreenEntered] = useState(false);
   const [isFullscreenPaused, setIsFullscreenPaused] = useState(false);
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
@@ -335,36 +344,413 @@ const InterviewScreen = (props) => {
     console.log('Question type changed to:', questionType);
   };
 
-  // Initialize tab monitoring
+  // Implement exact same monitoring logic as FullscreenPause
   useEffect(() => {
-    if (!tabMonitoringService) {
-      const monitoringService = new TabMonitoringService();
-      
-      monitoringService.setCallbacks({
-        onSuspiciousActivity: (activity) => {
-          setSuspiciousActivities(prev => [...prev, activity]);
-          console.log('Suspicious activity detected:', activity);
-        },
-        onTabSwitch: (data) => {
-          setTabSwitchCount(data.count);
-          console.log('Tab switch detected:', data);
-        },
-        onInactivity: (data) => {
-          console.log('Inactivity detected:', data);
-        }
-      });
-      
-      setTabMonitoringService(monitoringService);
-      setIsMonitoringActive(true);
+    // Only clear sessionStorage if this is a completely new interview session
+    if (!sessionStorage.getItem('interviewStarted')) {
+      sessionStorage.setItem('interviewStarted', 'true');
+      // Don't clear the counters - let them persist across screens
+      // sessionStorage.removeItem('pauseSuspiciousActivityCount');
+      // sessionStorage.removeItem('pauseAppSwitchCount');
+    }
+    
+    // Load existing values from sessionStorage to ensure we don't reset
+    const existingSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
+    const existingAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
+    
+    if (existingSuspicious && parseInt(existingSuspicious) !== sharedSuspiciousActivityCount) {
+      setSharedSuspiciousActivityCount(parseInt(existingSuspicious));
+    }
+    if (existingAppSwitch && parseInt(existingAppSwitch) !== sharedAppSwitchCount) {
+      setSharedAppSwitchCount(parseInt(existingAppSwitch));
     }
 
-    // Cleanup monitoring service on unmount
-    return () => {
-      if (tabMonitoringService) {
-        tabMonitoringService.destroy();
+    // Set monitoring as active
+    setIsMonitoringActive(true);
+    
+    // Enhanced application switching detection (exact same as FullscreenPause)
+    let lastActiveTime = Date.now();
+    let isCurrentlyActive = true;
+    let mouseMovementCount = 0;
+    let keyboardActivityCount = 0;
+    let suspiciousActivityDetected = false;
+    let lastActivityCheck = Date.now();
+    let consecutiveSuspiciousChecks = 0;
+
+    // Track all types of user activity
+    const updateActivity = () => {
+      lastActiveTime = Date.now();
+      lastActivityCheck = Date.now();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: User switched tabs or applications during interview');
+        isCurrentlyActive = false;
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      } else if (!document.hidden) {
+        isCurrentlyActive = true;
+        updateActivity();
       }
     };
-  }, [tabMonitoringService]);
+
+    const handleFocusChange = () => {
+      if (!document.hasFocus() && isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: User switched to another application during interview');
+        isCurrentlyActive = false;
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      } else if (document.hasFocus()) {
+        isCurrentlyActive = true;
+        updateActivity();
+      }
+    };
+
+    const handleBlur = () => {
+      if (isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: Window lost focus during interview');
+        isCurrentlyActive = false;
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      }
+    };
+
+    const handleFocus = () => {
+      isCurrentlyActive = true;
+      updateActivity();
+    };
+
+    // Enhanced mouse tracking with pixel-level detection
+    const handleMouseMove = (event) => {
+      const currentPosition = { x: event.clientX, y: event.clientY };
+      
+      // Check if mouse movement is within the browser window bounds
+      const isWithinBounds = currentPosition.x >= 0 && 
+                           currentPosition.x <= window.innerWidth &&
+                           currentPosition.y >= 0 && 
+                           currentPosition.y <= window.innerHeight;
+
+      if (isCurrentlyActive && isWithinBounds) {
+        updateActivity();
+        mouseMovementCount++;
+      }
+    };
+
+    // Ultra-aggressive keyboard monitoring
+    const handleKeyPress = (event) => {
+      if (isCurrentlyActive) {
+        updateActivity();
+        keyboardActivityCount++;
+        
+        // Detect suspicious keyboard patterns (like typing in WhatsApp)
+        if (keyboardActivityCount > 5 && Date.now() - lastActiveTime < 3000) {
+          console.log('🚨 SUSPICIOUS: High keyboard activity detected - possible messaging app');
+          suspiciousActivityDetected = true;
+          consecutiveSuspiciousChecks++;
+          setSharedSuspiciousActivityCount(prev => {
+            const newValue = prev + 1;
+            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+            return newValue;
+          });
+        }
+        
+        // Detect rapid typing patterns
+        if (keyboardActivityCount > 20) {
+          console.log('🚨 SUSPICIOUS: Excessive keyboard activity - possible external app');
+          suspiciousActivityDetected = true;
+          consecutiveSuspiciousChecks++;
+          setSharedSuspiciousActivityCount(prev => {
+            const newValue = prev + 1;
+            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+            return newValue;
+          });
+        }
+      }
+    };
+
+    // Monitor clipboard changes
+    const handleClipboardChange = () => {
+      if (isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      }
+    };
+
+    // Detect rapid window state changes
+    let windowStateChanges = 0;
+    const handleWindowStateChange = () => {
+      if (isCurrentlyFullscreen) {
+        windowStateChanges++;
+        if (windowStateChanges > 2) {
+          console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
+          suspiciousActivityDetected = true;
+          consecutiveSuspiciousChecks++;
+          setSharedSuspiciousActivityCount(prev => {
+            const newValue = prev + 1;
+            sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+            return newValue;
+          });
+          setSharedAppSwitchCount(prev => {
+            const newValue = prev + 1;
+            sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+            return newValue;
+          });
+        }
+      }
+    };
+
+    // Overlay detection - less aggressive
+    const checkForOverlayApplications = () => {
+      const timeSinceLastActivity = Date.now() - lastActiveTime;
+      
+      // Only detect if multiple indicators are present for a longer period
+      const indicators = [];
+      
+      if (timeSinceLastActivity > 4000) indicators.push('inactivity');
+      if (mouseMovementCount < 1 && timeSinceLastActivity > 3000) indicators.push('no_mouse_activity');
+      if (keyboardActivityCount < 1 && timeSinceLastActivity > 3000) indicators.push('no_keyboard_activity');
+      if (document.hasFocus() && !document.hidden && timeSinceLastActivity > 5000) indicators.push('focused_but_inactive');
+      
+      if (indicators.length >= 3 && !document.hasFocus()) {
+        console.log('🚨 SUSPICIOUS: Multiple indicators suggest overlay application:', indicators);
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+      }
+      
+      // Reset counters if user is active
+      if (timeSinceLastActivity < 2000) {
+        consecutiveSuspiciousChecks = 0;
+        windowStateChanges = 0;
+      }
+    };
+
+    // Activity checking - less aggressive to prevent false positives
+    const checkActivity = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActiveTime;
+      
+      // Only detect if user is actually inactive for a longer period
+      if (timeSinceLastActivity > 5000 && isCurrentlyFullscreen && !document.hasFocus()) {
+        console.log('🚨 SUSPICIOUS: User appears inactive - possible overlay application');
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+      }
+      
+      // Check for overlay applications less frequently
+      checkForOverlayApplications();
+      
+      // Reset activity counters periodically
+      if (timeSinceLastActivity > 8000) {
+        mouseMovementCount = 0;
+        keyboardActivityCount = 0;
+      }
+      
+      // Log suspicious activity levels
+      if (consecutiveSuspiciousChecks > 1) {
+        console.log(`🚨 HIGH SUSPICION LEVEL: ${consecutiveSuspiciousChecks} consecutive suspicious checks`);
+      }
+    }, 2000); // Check every 2 seconds instead of 1
+
+    // Monitor for window resize events
+    const handleResize = () => {
+      if (isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: Window resized - possible overlay application');
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      }
+    };
+
+    // Monitor for selection changes
+    const handleSelectionChange = () => {
+      if (isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      }
+    };
+
+    // Monitor for context menu (common when switching apps)
+    const handleContextMenu = () => {
+      if (isCurrentlyFullscreen) {
+        console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
+        suspiciousActivityDetected = true;
+        consecutiveSuspiciousChecks++;
+        setSharedSuspiciousActivityCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
+          return newValue;
+        });
+        setSharedAppSwitchCount(prev => {
+          const newValue = prev + 1;
+          sessionStorage.setItem('pauseAppSwitchCount', newValue.toString());
+          return newValue;
+        });
+      }
+    };
+
+    // Add all event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('focus', handleFocus);
+    document.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('keydown', handleKeyPress);
+    document.addEventListener('keyup', handleKeyPress);
+    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('contextmenu', handleContextMenu);
+    
+    // Try to monitor clipboard
+    try {
+      navigator.clipboard.addEventListener('clipboardchange', handleClipboardChange);
+    } catch (e) {
+      console.log('Clipboard monitoring not available');
+    }
+    
+    // Sync with sessionStorage every second to ensure consistency
+    const syncInterval = setInterval(() => {
+      const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
+      const storedAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
+      
+      if (storedSuspicious) {
+        const currentValue = parseInt(storedSuspicious);
+        if (currentValue !== sharedSuspiciousActivityCount) {
+          console.log('Syncing suspicious activity count:', sharedSuspiciousActivityCount, '->', currentValue);
+          setSharedSuspiciousActivityCount(currentValue);
+        }
+      }
+      
+      if (storedAppSwitch) {
+        const currentValue = parseInt(storedAppSwitch);
+        if (currentValue !== sharedAppSwitchCount) {
+          console.log('Syncing app switch count:', sharedAppSwitchCount, '->', currentValue);
+          setSharedAppSwitchCount(currentValue);
+        }
+      }
+    }, 500); // Sync more frequently to prevent resets
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('focus', handleFocus);
+      document.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('keydown', handleKeyPress);
+      document.removeEventListener('keyup', handleKeyPress);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      
+      try {
+        navigator.clipboard.removeEventListener('clipboardchange', handleClipboardChange);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
+      clearInterval(checkActivity);
+      clearInterval(syncInterval);
+      // Clean up session when component unmounts
+      sessionStorage.removeItem('interviewStarted');
+    };
+  }, [isCurrentlyFullscreen, sharedSuspiciousActivityCount, sharedAppSwitchCount]);
+
+  // Ensure counters are preserved when transitioning from pause to interview
+  useEffect(() => {
+    if (!isFullscreenPaused && isFullscreenEntered) {
+      // We're back in the interview screen, ensure counters are preserved
+      const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
+      const storedAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
+      
+      if (storedSuspicious) {
+        const currentValue = parseInt(storedSuspicious);
+        if (currentValue !== sharedSuspiciousActivityCount) {
+          console.log('Transition: Syncing suspicious activity count:', sharedSuspiciousActivityCount, '->', currentValue);
+          setSharedSuspiciousActivityCount(currentValue);
+        }
+      }
+      
+      if (storedAppSwitch) {
+        const currentValue = parseInt(storedAppSwitch);
+        if (currentValue !== sharedAppSwitchCount) {
+          console.log('Transition: Syncing app switch count:', sharedAppSwitchCount, '->', currentValue);
+          setSharedAppSwitchCount(currentValue);
+        }
+      }
+    }
+  }, [isFullscreenPaused, isFullscreenEntered, sharedSuspiciousActivityCount, sharedAppSwitchCount]);
 
   // Monitor fullscreen exit
   useEffect(() => {
@@ -429,10 +815,12 @@ const InterviewScreen = (props) => {
         console.log('Fullscreen re-entered, resuming interview');
         setIsFullscreenPaused(false);
         setIsCurrentlyFullscreen(true);
+        // Don't reset counters - keep accumulated values
       } else if (fullscreenElement && !isCurrentlyFullscreen) {
         // Fullscreen was entered but we weren't tracking it
         console.log('Fullscreen detected but not paused, updating status');
         setIsCurrentlyFullscreen(true);
+        // Don't reset counters - keep accumulated values
       }
     };
 
@@ -499,6 +887,27 @@ const InterviewScreen = (props) => {
     console.log('handleFullscreenResumed called');
     setIsFullscreenPaused(false);
     setIsCurrentlyFullscreen(true);
+    
+    // Ensure counters are preserved by re-syncing with sessionStorage
+    const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
+    const storedAppSwitch = sessionStorage.getItem('pauseAppSwitchCount');
+    
+    if (storedSuspicious) {
+      const currentValue = parseInt(storedSuspicious);
+      if (currentValue !== sharedSuspiciousActivityCount) {
+        console.log('Resume: Syncing suspicious activity count:', sharedSuspiciousActivityCount, '->', currentValue);
+        setSharedSuspiciousActivityCount(currentValue);
+      }
+    }
+    
+    if (storedAppSwitch) {
+      const currentValue = parseInt(storedAppSwitch);
+      if (currentValue !== sharedAppSwitchCount) {
+        console.log('Resume: Syncing app switch count:', sharedAppSwitchCount, '->', currentValue);
+        setSharedAppSwitchCount(currentValue);
+      }
+    }
+    
     console.log('Interview resumed after fullscreen re-entry - states updated');
   };
 
@@ -822,6 +1231,71 @@ const InterviewScreen = (props) => {
                   }}>Follow-up</span>}
                 </div>
                 
+                {/* Suspicious Activity Monitor - Prominent Position */}
+                <div style={{
+                  marginBottom: '1.5rem',
+                  padding: '1rem',
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+                  border: '2px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <h3 style={{
+                      margin: 0,
+                      fontSize: '1.1rem',
+                      fontWeight: 700,
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <span>🔍</span>
+                      Security Monitoring
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)'
+                      }}>
+                        <span style={{ fontSize: '1.2rem' }}>🚨</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>
+                          Suspicious: {sharedSuspiciousActivityCount}
+                        </span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)'
+                      }}>
+                        <span style={{ fontSize: '1.2rem' }}>📱</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>
+                          App Switches: {sharedAppSwitchCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+                
                 {/* Tech Question Types */}
                 {!isFollowUpQuestion && (
                   <TechQuestionTypes 
@@ -829,14 +1303,6 @@ const InterviewScreen = (props) => {
                     onQuestionTypeChange={handleQuestionTypeChange}
                   />
                 )}
-                
-                {/* Suspicious Activity Monitor */}
-                <SuspiciousActivityMonitor
-                  isActive={isMonitoringActive}
-                  suspiciousActivities={suspiciousActivities}
-                  tabSwitchCount={tabSwitchCount}
-                  onActivityReport={handleActivityReport}
-                />
                 
                 {/* Code Editor for code/SQL questions */}
                 {isCodeQuestion && (

@@ -145,7 +145,7 @@ const questionBank = {
     });
     return questions;
   };
-
+  
   // New function to generate follow-up questions based on answer quality
   const generateFollowUpQuestion = async (originalQuestion, userAnswer, answerQuality) => {
     try {

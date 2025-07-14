@@ -49,17 +49,17 @@ const WebcamFeed = ({ onConfidenceScore }) => {
 
       // Check if webcamRef.current and video exist before creating camera
       if (webcamRef.current && webcamRef.current.video) {
-        camera = new Camera(webcamRef.current.video, {
-          onFrame: async () => {
+      camera = new Camera(webcamRef.current.video, {
+        onFrame: async () => {
             // Add null check for video element
             if (webcamRef.current && webcamRef.current.video) {
-              await faceMesh.send({ image: webcamRef.current.video });
+          await faceMesh.send({ image: webcamRef.current.video });
             }
-          },
-          width: 400,
-          height: 300,
-        });
-        camera.start();
+        },
+        width: 400,
+        height: 300,
+      });
+      camera.start();
       } else {
         console.warn('Webcam video element not ready yet');
       }
@@ -68,11 +68,11 @@ const WebcamFeed = ({ onConfidenceScore }) => {
     // Wait for webcam to be ready before setting up face detection
     const initializeFaceDetection = () => {
       if (webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4) {
-        setupFaceMesh();
+      setupFaceMesh();
       } else {
         // Retry after a short delay if webcam isn't ready yet
         setTimeout(initializeFaceDetection, 100);
-      }
+    }
     };
 
     initializeFaceDetection();
