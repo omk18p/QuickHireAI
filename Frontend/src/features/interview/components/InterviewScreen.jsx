@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import WebcamFeed from "./WebcamFeed";
 import { api } from "../../../shared/services/api";
 import "../styles/InterviewScreen.css";
-import SimpleCodeEditor from "./SimpleCodeEditor";
 import RealTimeFeedback from './RealTimeFeedback';
 import FinalEvaluation from './FinalEvaluation';
 import speechRecognitionService from '../services/speechRecognitionService';
@@ -90,6 +89,7 @@ const InterviewScreen = (props) => {
   const [isFullscreenPaused, setIsFullscreenPaused] = useState(false);
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
   const recentlyIncrementedRef = useRef(false);
+  const focusLossIncrementedRef = useRef(false);
 
   // Add at the top of the component
   const getStoredLogs = () => {
@@ -266,7 +266,8 @@ const InterviewScreen = (props) => {
       setTranscript(finalTranscript.trim());
       // Log transcript for debugging
       console.log('Transcript to submit:', finalTranscript.trim());
-      await submitAnswer(finalTranscript.trim());
+      // Auto-submit code and transcript
+      await submitAnswer({ code, transcript: finalTranscript.trim() });
 
     } catch (error) {
       console.error('Error in stopRecording:', error);
@@ -277,27 +278,36 @@ const InterviewScreen = (props) => {
     }
   };
 
-  const submitAnswer = async (answer) => {
+  // 1. Always show 'Write code here...' as the placeholder
+  // 2. Use a simple code editor with line numbers (fallback to textarea with line numbers if no library)
+  // 3. Keep Submit Code button below
+  // 4. On submit, send both code and transcript in the evaluation
+
+  // For now, use a styled textarea with line numbers (for simplicity and reliability)
+  const submitAnswer = async (payload) => {
     try {
-      console.log('Starting answer submission:', answer);
-      
-      if (!answer || !answer.trim()) {
+      let answerText = typeof payload === 'string' ? payload : payload.transcript;
+      let codeText = typeof payload === 'string' ? code : payload.code;
+      // If transcript/answerText is empty but codeText is present, use codeText as the answer
+      if ((!answerText || !answerText.trim()) && codeText && codeText.trim()) {
+        answerText = codeText;
+      }
+      if (!answerText || !answerText.trim()) {
         throw new Error('No answer to submit');
       }
-
       setIsProcessing(true);
       setError(null);
-
+      
       // Log the request payload
-      const payload = {
-        answer: answer.trim(),
+      const requestPayload = {
+        answer: answerText.trim(),
         question: currentQuestion,
         interviewCode,
-        code: code || ''
+        code: codeText || '',
       };
-      console.log('Submitting answer with payload:', payload);
+      console.log('Submitting answer with payload:', requestPayload);
 
-      const response = await api.post('/interviews/evaluate-answer', payload);
+      const response = await api.post('/interviews/evaluate-answer', requestPayload);
 
       // Log backend response
       console.log('Evaluation response:', response.data);
@@ -315,8 +325,8 @@ const InterviewScreen = (props) => {
       // Store the answer
       const newAnswer = {
         question: currentQuestion,
-        answer: answer.trim(),
-        code,
+        answer: answerText.trim(),
+        code: codeText || '',
         evaluation,
         questionNumber: questionIndex + 1,
         isFollowUp: isFollowUpQuestion
@@ -384,6 +394,13 @@ const InterviewScreen = (props) => {
       setIsProcessing(true);
       setSkipError(null);
       setSkippedQuestions(prev => [...prev, questionIndex]);
+      // Auto-submit code/transcript if present before skipping
+      const codeTrimmed = code ? code.trim() : '';
+      const transcriptTrimmed = transcript ? transcript.trim() : '';
+      if (codeTrimmed || transcriptTrimmed) {
+        await submitAnswer({ code, transcript });
+        return; // Prevent double-advance: if we submitted, do not run skip logic
+      }
       const payload = {
         answer: '',
         question: validQuestion, // always send valid object
@@ -469,9 +486,10 @@ const InterviewScreen = (props) => {
       lastActivityCheck = Date.now();
     };
 
-    // Update incrementCountsOnce to accept a message
-    const incrementCountsOnce = (logMessage) => {
-      if (!recentlyIncrementedRef.current) {
+    // incrementCountsOnce should NOT be called from click/mouse/keyboard events in fullscreen
+    const incrementCountsOnce = (logMessage, eventSource) => {
+      if (!recentlyIncrementedRef.current && !focusLossIncrementedRef.current) {
+        console.log('[SUSPICIOUS COUNT INCREMENT]', { logMessage, eventSource });
         setSharedSuspiciousActivityCount(prev => {
           const newValue = prev + 1;
           sessionStorage.setItem('pauseSuspiciousActivityCount', newValue.toString());
@@ -484,20 +502,39 @@ const InterviewScreen = (props) => {
         });
         if (logMessage) addSuspiciousLog(logMessage);
         recentlyIncrementedRef.current = true;
+        focusLossIncrementedRef.current = true;
         setTimeout(() => { recentlyIncrementedRef.current = false; }, 500);
       }
     };
 
+    // Only call incrementCountsOnce from these event handlers:
+    // - handleVisibilityChange (when document.hidden && isCurrentlyFullscreen)
+    // - handleFocusChange (when !document.hasFocus() && isCurrentlyFullscreen)
+    // - handleBlur (when isCurrentlyFullscreen)
+    // Do NOT call incrementCountsOnce from click/mouse/keyboard events in fullscreen
+
+    // Only these events should call incrementCountsOnce:
+    // - visibilitychange (when document.hidden)
+    // - window blur (when not focused)
+    // - window focus loss
+    // - clipboard change (optional)
+    // - rapid window state changes
+    // - overlay detection (if implemented)
+
+    // Remove any click/mousedown/mouseup event listeners that call incrementCountsOnce
+    // (If any such listeners exist, remove them here)
+
     const handleVisibilityChange = () => {
-      if (document.hidden && isCurrentlyFullscreen) {
+      if (document.hidden && isCurrentlyFullscreen && !focusLossIncrementedRef.current) {
         console.log('🚨 SUSPICIOUS: User switched tabs or applications during interview');
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('Tab switch detected via visibilitychange (document.hidden)');
+        incrementCountsOnce('Tab switch detected via visibilitychange (document.hidden)', 'visibilitychange');
       } else if (!document.hidden) {
         isCurrentlyActive = true;
         updateActivity();
+        focusLossIncrementedRef.current = false; // Reset on focus regain
       }
     };
 
@@ -507,26 +544,28 @@ const InterviewScreen = (props) => {
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('App switch detected via focus change (window lost focus)');
+        incrementCountsOnce('App switch detected via focus change (window lost focus)', 'focuschange');
       } else if (document.hasFocus()) {
         isCurrentlyActive = true;
         updateActivity();
+        focusLossIncrementedRef.current = false; // Reset on focus regain
       }
     };
 
     const handleBlur = () => {
-      if (isCurrentlyFullscreen) {
-        console.log('🚨 SUSPICIOUS: Window lost focus during interview');
+      if (isCurrentlyFullscreen && !document.hasFocus() && !focusLossIncrementedRef.current) {
+        console.log('🚨 SUSPICIOUS: Window lost focus during interview (actual app/tab switch)');
         isCurrentlyActive = false;
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('App switch detected via blur event');
+        incrementCountsOnce('App switch detected via blur event', 'blur');
       }
     };
 
     const handleFocus = () => {
       isCurrentlyActive = true;
       updateActivity();
+      focusLossIncrementedRef.current = false; // Reset on focus regain
     };
 
     // Enhanced mouse tracking with pixel-level detection
@@ -542,29 +581,29 @@ const InterviewScreen = (props) => {
       if (isCurrentlyActive && isWithinBounds) {
         updateActivity();
         mouseMovementCount++;
+        // NEVER increment suspicious count for mouse move in fullscreen
       }
     };
 
-    // Ultra-aggressive keyboard monitoring
+    // Ultra-aggressive keyboard monitoring (make less aggressive)
     const handleKeyPress = (event) => {
       if (isCurrentlyActive) {
         updateActivity();
         keyboardActivityCount++;
-        
-        // Detect suspicious keyboard patterns (like typing in WhatsApp)
-        if (keyboardActivityCount > 5 && Date.now() - lastActiveTime < 3000) {
-          console.log('🚨 SUSPICIOUS: High keyboard activity detected - possible messaging app');
-          suspiciousActivityDetected = true;
-          consecutiveSuspiciousChecks++;
-          incrementCountsOnce();
-        }
-        
-        // Detect rapid typing patterns
-        if (keyboardActivityCount > 20) {
-          console.log('🚨 SUSPICIOUS: Excessive keyboard activity - possible external app');
-          suspiciousActivityDetected = true;
-          consecutiveSuspiciousChecks++;
-          incrementCountsOnce();
+        // Make thresholds higher and never increment for normal typing in fullscreen
+        if (!isCurrentlyFullscreen) {
+          if (keyboardActivityCount > 10 && Date.now() - lastActiveTime < 3000) {
+            console.log('🚨 SUSPICIOUS: High keyboard activity detected - possible messaging app');
+            suspiciousActivityDetected = true;
+            consecutiveSuspiciousChecks++;
+            incrementCountsOnce('High keyboard activity', 'keyboard');
+          }
+          if (keyboardActivityCount > 40) {
+            console.log('🚨 SUSPICIOUS: Excessive keyboard activity - possible external app');
+            suspiciousActivityDetected = true;
+            consecutiveSuspiciousChecks++;
+            incrementCountsOnce('Excessive keyboard activity', 'keyboard');
+          }
         }
       }
     };
@@ -575,7 +614,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Clipboard changed - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('Clipboard change detected (possible app switch)');
+        incrementCountsOnce('Clipboard change detected (possible app switch)', 'clipboardchange');
       }
     };
 
@@ -588,7 +627,7 @@ const InterviewScreen = (props) => {
           console.log('🚨 SUSPICIOUS: Multiple window state changes detected');
           suspiciousActivityDetected = true;
           consecutiveSuspiciousChecks++;
-          incrementCountsOnce('Window state change detected (possible app switch)');
+          incrementCountsOnce('Window state change detected (possible app switch)', 'windowstatechange');
         }
       }
     };
@@ -624,11 +663,11 @@ const InterviewScreen = (props) => {
       const timeSinceLastActivity = Date.now() - lastActiveTime;
       
       // Only detect if user is actually inactive for a longer period
-      if (timeSinceLastActivity > 5000 && isCurrentlyFullscreen && !document.hasFocus()) {
+      if (timeSinceLastActivity > 10000 && isCurrentlyFullscreen && !document.hasFocus()) {
         console.log('🚨 SUSPICIOUS: User appears inactive - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce();
+        incrementCountsOnce('Inactivity in fullscreen', 'interval');
       }
       
       // Check for overlay applications less frequently
@@ -652,17 +691,21 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Window resized - possible overlay application');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('Window state change detected (possible app switch)');
+        incrementCountsOnce('Window state change detected (possible app switch)', 'resize');
       }
     };
 
     // Monitor for selection changes
     const handleSelectionChange = () => {
       if (isCurrentlyFullscreen) {
-        console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
-        suspiciousActivityDetected = true;
-        consecutiveSuspiciousChecks++;
-        incrementCountsOnce('Selection change detected (possible app switch)');
+        const selection = document.getSelection();
+        if (selection && !selection.isCollapsed) {
+          // Only increment if actual text is selected
+          console.log('🚨 SUSPICIOUS: Text selection changed - possible app switching');
+          suspiciousActivityDetected = true;
+          consecutiveSuspiciousChecks++;
+          incrementCountsOnce('Selection change detected (possible app switch)', 'selectionchange');
+        }
       }
     };
 
@@ -672,7 +715,7 @@ const InterviewScreen = (props) => {
         console.log('🚨 SUSPICIOUS: Context menu opened - possible app switching');
         suspiciousActivityDetected = true;
         consecutiveSuspiciousChecks++;
-        incrementCountsOnce('Context menu opened (possible app switch)');
+        incrementCountsOnce('Context menu opened (possible app switch)', 'contextmenu');
       }
     };
 
@@ -695,7 +738,67 @@ const InterviewScreen = (props) => {
     } catch (e) {
       console.log('Clipboard monitoring not available');
     }
-    
+
+    // --- Disable copy/cut/paste in fullscreen ---
+    const preventCopyCutPaste = (e) => {
+      if (isCurrentlyFullscreen) {
+        e.preventDefault();
+        if (e.type === 'copy') {
+          alert('Copy is disabled during the interview.');
+        }
+      }
+    };
+    document.addEventListener('copy', preventCopyCutPaste);
+    document.addEventListener('cut', preventCopyCutPaste);
+    document.addEventListener('paste', preventCopyCutPaste);
+    // -------------------------------------------
+
+    // --- Prevent text selection in fullscreen ---
+    const preventTextSelection = (e) => {
+      if (isCurrentlyFullscreen) {
+        e.preventDefault();
+        // Show notification (only one at a time)
+        if (!document.getElementById('no-select-notification')) {
+          const notification = document.createElement('div');
+          notification.id = 'no-select-notification';
+          notification.className = 'fullscreen-required-notification';
+          notification.innerHTML = `
+            <div class="notification-content">
+              <span class="notification-icon">🚫</span>
+              <span class="notification-text">You can’t select text during the interview.</span>
+              <button class="notification-dismiss" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; margin-left: 8px;">×</button>
+            </div>
+          `;
+          notification.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+            z-index: 10001;
+            font-family: inherit;
+            font-weight: 700;
+            animation: slideInUp 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            min-width: 200px;
+            text-align: center;
+          `;
+          document.body.appendChild(notification);
+          setTimeout(() => {
+            if (notification.parentElement) {
+              notification.remove();
+            }
+          }, 2000);
+        }
+      }
+    };
+    document.addEventListener('selectstart', preventTextSelection);
+    // -------------------------------------------
+
     // Sync with sessionStorage every second to ensure consistency
     const syncInterval = setInterval(() => {
       const storedSuspicious = sessionStorage.getItem('pauseSuspiciousActivityCount');
@@ -730,13 +833,17 @@ const InterviewScreen = (props) => {
       document.removeEventListener('keyup', handleKeyPress);
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('contextmenu', handleContextMenu);
-      
+      // Remove copy/cut/paste prevention
+      document.removeEventListener('copy', preventCopyCutPaste);
+      document.removeEventListener('cut', preventCopyCutPaste);
+      document.removeEventListener('paste', preventCopyCutPaste);
+      // Remove text selection prevention
+      document.removeEventListener('selectstart', preventTextSelection);
       try {
         navigator.clipboard.removeEventListener('clipboardchange', handleClipboardChange);
       } catch (e) {
         // Ignore cleanup errors
       }
-      
       clearInterval(checkActivity);
       clearInterval(syncInterval);
       // Clean up session when component unmounts
@@ -1172,49 +1279,40 @@ const InterviewScreen = (props) => {
       )}
       
       {/* Main Content */}
-      <main style={{ 
-        flex: 1, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        width: '100%', 
-        minHeight: 'calc(100vh - 64px - 48px)', 
-        padding: '2.5rem 0 1.5rem 0',
-        position: 'relative',
-        zIndex: 10,
-        marginTop: !isCurrentlyFullscreen ? '60px' : '0'
-      }}>
-        <div className="interview-main-card" style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+      <main
+        className="interview-main-card"
+        style={{
+          marginTop: 32,
+          width: '100%',
+          maxWidth: 1300,
+          minHeight: 600,
+          margin: '0 auto',
+          background: 'white',
           borderRadius: 24,
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 20px rgba(102, 126, 234, 0.3)',
-          padding: 0,
-          minWidth: 280,
-          maxWidth: 900,
-          width: '96vw',
+          boxShadow: '0 8px 40px rgba(30,41,59,0.13)',
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'stretch',
+          gap: 0,
           animation: 'fadeIn 0.8s',
           overflow: 'hidden',
           position: 'relative',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           opacity: !isCurrentlyFullscreen ? 0.7 : 1,
           filter: !isCurrentlyFullscreen ? 'grayscale(0.3)' : 'none',
+        }}
+      >
+        {/* Left Panel: Question/Answer */}
+        <div style={{
+          flex: 1.2,
+          minWidth: 220,
+          maxWidth: 480,
+          padding: '1.5rem 1.2rem 1.2rem 1.2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          background: 'transparent',
         }}>
-          {/* Left Panel: Question/Answer */}
-          <div style={{
-            flex: 1.2,
-            minWidth: 220,
-            maxWidth: 480,
-            padding: '1.5rem 1.2rem 1.2rem 1.2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            background: 'transparent',
-          }}>
             {/* Title & Progress */}
             <div style={{ marginBottom: 18 }}>
               <h2 style={{ fontWeight: 900, fontSize: '2.1rem', color: '#1e293b', margin: 0, letterSpacing: '-1px' }}>Technical Interview</h2>
@@ -1271,7 +1369,6 @@ const InterviewScreen = (props) => {
                     fontWeight: 600
                   }}>Follow-up</span>}
                 </div>
-                
                 {/* Suspicious Activity Monitor - Prominent Position */}
                 <div style={{
                   marginBottom: '1.5rem',
@@ -1336,45 +1433,12 @@ const InterviewScreen = (props) => {
                   </div>
 
                 </div>
-                
                 {/* Tech Question Types */}
                 {!isFollowUpQuestion && (
                   <TechQuestionTypes 
                     currentQuestion={currentQuestion}
                     onQuestionTypeChange={handleQuestionTypeChange}
                   />
-                )}
-                
-                {/* Code Editor for code/SQL questions */}
-                {isCodeQuestion && (
-                  <div style={{ marginTop: 10, marginBottom: 10 }}>
-                    <SimpleCodeEditor
-                      value={code}
-                      onChange={setCode}
-                      language={/sql|query/i.test(currentQuestion.question || currentQuestion.text) ? 'sql' : 'javascript'}
-                      placeholder={/sql|query/i.test(currentQuestion.question || currentQuestion.text) ? 'Write your SQL query here...' : 'Write your code here...'}
-                    />
-                    <button
-                      className="submit-button"
-                      style={{ marginTop: 8, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: 'pointer' }}
-                      onClick={async (e) => {
-                        if (!isCurrentlyFullscreen) {
-                          e.preventDefault();
-                          handleDisabledButtonClick('submit');
-                        } else {
-                          setIsProcessing(true);
-                          await submitAnswer(code);
-                          setIsProcessing(false);
-                        }
-                      }}
-                      disabled={isProcessing || !code.trim()}
-                      aria-label="Submit code answer"
-                      title={!isCurrentlyFullscreen ? 'Fullscreen required to submit' : ''}
-                    >
-                      Submit Code
-                      {!isCurrentlyFullscreen && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
-                    </button>
-                  </div>
                 )}
               </>
             ) : (
@@ -1383,81 +1447,18 @@ const InterviewScreen = (props) => {
                 <p>Please contact support or try again later.</p>
               </div>
             )}
+            {/* Remove control buttons from here */}
             {/* Controls always at the bottom, sticky if needed */}
-            <div className="control-buttons sticky-controls" style={{
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'center',
-              marginTop: 18,
-              position: 'sticky',
-              bottom: 0,
-              background: '#fff',
-              zIndex: 10,
-              padding: '1rem 0 0.5rem 0',
-              borderTop: '1px solid #e5e7eb',
-              minHeight: 70,
-            }}>
-              <button 
-                className={`record-button${isRecording ? ' recording' : ''}`} 
-                onClick={(e) => {
-                  if (!isCurrentlyFullscreen) {
-                    e.preventDefault();
-                    handleDisabledButtonClick('record');
-                  } else {
-                    isRecording ? stopRecording() : startRecording();
-                  }
-                }} 
-                disabled={isProcessing || !hasQuestion} 
-                aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
-                title={!isCurrentlyFullscreen ? 'Fullscreen required to record' : ''}
-              >
-                {isRecording ? 'Stop Recording' : 'Start Recording'}
-                {!isCurrentlyFullscreen && !isRecording && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
-              </button>
-              <button 
-                className="skip-button" 
-                onClick={(e) => {
-                  if (!isCurrentlyFullscreen) {
-                    e.preventDefault();
-                    handleDisabledButtonClick('skip');
-                  } else {
-                    skipQuestion();
-                  }
-                }} 
-                disabled={isProcessing || !hasQuestion} 
-                aria-label="Skip this question"
-                title={!isCurrentlyFullscreen ? 'Fullscreen required to skip' : ''}
-              >
-                Skip Question
-                {!isCurrentlyFullscreen && <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔒</span>}
-              </button>
-            </div>
-            {recordingError && <div className="recording-error">{recordingError}</div>}
-            {skipError && <div className="recording-error" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', marginTop: 8 }}>{skipError}</div>}
-            {!isCurrentlyFullscreen && (
-              <div className="fullscreen-warning" style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                color: 'white',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                marginTop: '12px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                animation: 'pulse 2s infinite'
-              }}>
-                🚫 All buttons are disabled. Enter fullscreen mode to continue the interview.
-              </div>
-            )}
+            {/* <div className="control-buttons sticky-controls" style={{ ... }}> ... </div> */}
+            {/* Error messages for recording/skip will be moved to right panel */}
           </div>
           {/* Divider */}
           <div style={{ width: 2, minHeight: '100%', background: 'linear-gradient(180deg,#e0e7ef 0%,#c7d2fe 100%)', borderRadius: 2, boxShadow: '0 0 8px #c7d2fe44', alignSelf: 'stretch' }}></div>
-          {/* Right Panel: Webcam & Transcript */}
+          {/* Right Panel: Webcam & Transcript & Controls & Code Editor */}
           <div style={{
-            flex: 1,
-            minWidth: 180,
-            maxWidth: 320,
+            flex: 1.4,
+            minWidth: 650,
+            maxWidth: 700,
             padding: '1.5rem 1.2rem 1.2rem 1.2rem',
             display: 'flex',
             flexDirection: 'column',
@@ -1509,10 +1510,149 @@ const InterviewScreen = (props) => {
               <span style={{ fontWeight: 700, fontSize: '1rem', color: '#2563eb', marginBottom: 4 }}>Transcript:</span>
               <span style={{ marginTop: 6, background: '#fff', borderRadius: 8, padding: '0.5rem 0.8rem', boxShadow: '0 1px 4px #c7d2fe22', color: '#334155', fontSize: '1.01rem', minWidth: 60 }}>{transcript || <span style={{ color: '#b6b6b6' }}>Your spoken answer will appear here.</span>}</span>
             </div>
+            {/* Control Buttons moved below transcript */}
+            <div className="control-buttons" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 10,
+              marginTop: 16,
+              width: '100%',
+              padding: 0,
+              background: 'none',
+              boxShadow: 'none',
+              border: 'none',
+            }}>
+              <button 
+                className={`record-button${isRecording ? ' recording' : ''}`} 
+                style={{
+                  width: '100%',
+                  maxWidth: 260,
+                  minHeight: 54,
+                  padding: '0.9rem 0',
+                  fontSize: '1.18rem',
+                  borderRadius: 22,
+                  marginBottom: 14,
+                  boxShadow: '0 2px 8px rgba(16,185,129,0.13)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                }}
+                onClick={(e) => {
+                  if (!isCurrentlyFullscreen) {
+                    e.preventDefault();
+                    handleDisabledButtonClick('record');
+                  } else {
+                    isRecording ? stopRecording() : startRecording();
+                  }
+                }} 
+                disabled={isProcessing || !hasQuestion} 
+                aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
+                title={!isCurrentlyFullscreen ? 'Fullscreen required to record' : ''}
+              >
+                {isRecording ? 'Stop' : 'Record Audio'}
+                {!isCurrentlyFullscreen && !isRecording && <span style={{ marginLeft: '4px', fontSize: '1.1rem' }}>🔒</span>}
+              </button>
+              <button 
+                className="skip-button" 
+                style={{
+                  width: '100%',
+                  maxWidth: 260,
+                  minHeight: 54,
+                  padding: '0.9rem 0',
+                  fontSize: '1.18rem',
+                  borderRadius: 22,
+                  marginBottom: 0,
+                  boxShadow: '0 2px 8px rgba(100,116,139,0.09)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                }}
+                onClick={(e) => {
+                  if (!isCurrentlyFullscreen) {
+                    e.preventDefault();
+                    handleDisabledButtonClick('skip');
+                  } else {
+                    skipQuestion();
+                  }
+                }} 
+                disabled={isProcessing || !hasQuestion} 
+                aria-label="Skip this question"
+                title={!isCurrentlyFullscreen ? 'Fullscreen required to skip' : ''}
+              >
+                Skip Question
+                {!isCurrentlyFullscreen && <span style={{ marginLeft: '4px', fontSize: '1.1rem' }}>🔒</span>}
+              </button>
+            </div>
+            {/* Code Editor for code/SQL questions moved below control buttons */}
+            {isCodeQuestion && (
+              <div style={{ width: '100%', minHeight: 260, margin: '28px 0 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', background: '#18181b', borderRadius: 8, border: '1.5px solid #c7d2fe', marginBottom: 14 }}>
+                  {/* Line numbers */}
+                  <pre style={{
+                    margin: 0,
+                    padding: '1rem 0.5rem 1rem 1rem',
+                    background: 'transparent',
+                    color: '#64748b',
+                    fontFamily: 'Consolas, Monaco, monospace',
+                    fontSize: 16,
+                    userSelect: 'none',
+                    minWidth: 32,
+                    textAlign: 'right',
+                    borderRight: '1px solid #27272a',
+                    height: '100%',
+                    lineHeight: '1.5',
+                  }}>
+                    {Array.from({ length: (code.match(/\n/g)?.length || 0) + 1 }).map((_, i) => i + 1).join('\n')}
+                  </pre>
+                  <textarea
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    placeholder={'Write code here...'}
+                    style={{
+                      width: '100%',
+                      minHeight: 220,
+                      fontFamily: 'Consolas, Monaco, monospace',
+                      fontSize: 16,
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      color: '#f1f5f9',
+                      padding: '1rem',
+                      resize: 'vertical',
+                      boxSizing: 'border-box',
+                      lineHeight: '1.5',
+                    }}
+                  />
+                </div>
+                {/* Submit button removed */}
+              </div>
+            )}
+            {/* Error messages for recording/skip below buttons */}
+            {recordingError && <div className="recording-error">{recordingError}</div>}
+            {skipError && <div className="recording-error" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', marginTop: 8 }}>{skipError}</div>}
+            {!isCurrentlyFullscreen && (
+              <div className="fullscreen-warning" style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: 'white',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginTop: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                animation: 'pulse 2s infinite'
+              }}>
+                🚫 All buttons are disabled. Enter fullscreen mode to continue the interview.
+              </div>
+            )}
           </div>
-        </div>
-      </main>
-      {/* Footer */}
+        </main>
       <footer style={{ 
         width: '100%', 
         textAlign: 'center', 

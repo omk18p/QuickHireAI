@@ -441,9 +441,9 @@
 }
 
 .right-panel {
-  flex: 1 1 350px;
-  min-width: 320px;
-  max-width: 500px;
+  flex: 1 1 650px;
+  min-width: 650px;
+  max-width: 1000px;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -1023,8 +1023,8 @@
   .webcam-sidecard {
     width: 100%;
     max-width: 400px;
-  margin: 0 auto;
-  position: relative;
+    margin: 0 auto;
+    position: relative;
     top: auto;
   }
 

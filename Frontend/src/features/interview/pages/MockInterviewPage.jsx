@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import InterviewGuidelines from '../components/InterviewGuidelines';
 import SkillsSelection from '../components/SkillsSelection';
 import InterviewScreen from '../components/InterviewScreen';
+import BranchSelection from '../components/BranchSelection';
 
 const MockInterviewPage = () => {
   const location = useLocation();
@@ -19,7 +20,8 @@ const MockInterviewPage = () => {
     return `mock-${Math.random().toString(36).substring(2, 8)}`;
   });
   
-  const [step, setStep] = useState('guidelines'); // Start at guidelines
+  const [step, setStep] = useState('branch'); // Start at branch selection
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
 
   // Clear any previous session/localStorage data on mount
@@ -32,6 +34,18 @@ const MockInterviewPage = () => {
     // Log the mock code for debugging
     console.log('MockInterviewPage initialized with code:', mockCode);
   }, [mockCode]);
+
+  // Step 0: Branch selection
+  if (step === 'branch') {
+    return (
+      <BranchSelection
+        onContinue={(branch) => {
+          setSelectedBranch(branch);
+          setStep('guidelines');
+        }}
+      />
+    );
+  }
 
   // Step 1: Show guidelines
   if (step === 'guidelines') {
@@ -49,6 +63,7 @@ const MockInterviewPage = () => {
     return (
       <SkillsSelection
         interviewCode={mockCode}
+        branch={selectedBranch}
         onContinue={async (skills) => {
           setSelectedSkills(skills);
           console.log('Starting mock interview with skills:', skills, 'and code:', mockCode);
@@ -89,6 +104,7 @@ const MockInterviewPage = () => {
       <InterviewScreen
         interviewCode={mockCode}
         selectedSkills={selectedSkills}
+        branch={selectedBranch}
         isMock={true}
       />
     );

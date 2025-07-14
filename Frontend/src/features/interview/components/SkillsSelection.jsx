@@ -63,10 +63,166 @@ const SKILL_CATEGORIES = {
       { id: 'bigdata', name: 'Big Data', icon: '📈' },
       { id: 'data_structures', name: 'Data Structures', icon: '📚' }
     ]
+  },
+  // Mechanical Engineering
+  mech_thermo: {
+    title: 'Thermodynamics',
+    skills: [
+      { id: 'laws_thermo', name: 'Laws of Thermodynamics', icon: '🔥' },
+      { id: 'entropy', name: 'Entropy', icon: '♨️' },
+      { id: 'cycles', name: 'Thermodynamic Cycles', icon: '🔄' },
+      { id: 'applications', name: 'Applications', icon: '🏭' }
+    ]
+  },
+  mech_fluid: {
+    title: 'Fluid Mechanics',
+    skills: [
+      { id: 'fluid_properties', name: 'Fluid Properties', icon: '💧' },
+      { id: 'flow', name: 'Fluid Flow', icon: '🌊' },
+      { id: 'pumps', name: 'Pumps & Turbines', icon: '🚰' },
+      { id: 'hydraulics', name: 'Hydraulics', icon: '🛠️' }
+    ]
+  },
+  mech_machine: {
+    title: 'Machine Design',
+    skills: [
+      { id: 'gears', name: 'Gears & Bearings', icon: '⚙️' },
+      { id: 'shafts', name: 'Shafts & Couplings', icon: '🔩' },
+      { id: 'failure', name: 'Failure Theories', icon: '💥' },
+      { id: 'design', name: 'Design Process', icon: '📐' }
+    ]
+  },
+  mech_manufacturing: {
+    title: 'Manufacturing',
+    skills: [
+      { id: 'casting', name: 'Casting', icon: '🏭' },
+      { id: 'welding', name: 'Welding', icon: '🔧' },
+      { id: 'machining', name: 'Machining', icon: '🛠️' },
+      { id: 'automation', name: 'Automation', icon: '🤖' }
+    ]
+  },
+  // ENTC
+  entc_digital: {
+    title: 'Digital Electronics',
+    skills: [
+      { id: 'logic_gates', name: 'Logic Gates', icon: '🔲' },
+      { id: 'flip_flops', name: 'Flip-Flops', icon: '🔁' },
+      { id: 'counters', name: 'Counters', icon: '🔢' },
+      { id: 'memory', name: 'Memory Devices', icon: '💾' }
+    ]
+  },
+  entc_analog: {
+    title: 'Analog Circuits',
+    skills: [
+      { id: 'amplifiers', name: 'Amplifiers', icon: '📢' },
+      { id: 'oscillators', name: 'Oscillators', icon: '🔊' },
+      { id: 'filters', name: 'Filters', icon: '🎚️' },
+      { id: 'opamps', name: 'Op-Amps', icon: '➕' }
+    ]
+  },
+  entc_comm: {
+    title: 'Communication Systems',
+    skills: [
+      { id: 'modulation', name: 'Modulation', icon: '📡' },
+      { id: 'demodulation', name: 'Demodulation', icon: '📶' },
+      { id: 'transmission', name: 'Transmission Lines', icon: '🛤️' },
+      { id: 'antennas', name: 'Antennas', icon: '📡' }
+    ]
+  },
+  entc_micro: {
+    title: 'Microprocessors',
+    skills: [
+      { id: '8085', name: '8085/8086', icon: '💻' },
+      { id: 'assembly', name: 'Assembly Language', icon: '⌨️' },
+      { id: 'peripherals', name: 'Peripherals', icon: '🖥️' },
+      { id: 'applications', name: 'Applications', icon: '📱' }
+    ]
+  },
+  // Electrical
+  elec_power: {
+    title: 'Power Systems',
+    skills: [
+      { id: 'generation', name: 'Generation', icon: '⚡' },
+      { id: 'transmission', name: 'Transmission', icon: '🔌' },
+      { id: 'distribution', name: 'Distribution', icon: '🔋' },
+      { id: 'protection', name: 'Protection', icon: '🛡️' }
+    ]
+  },
+  elec_control: {
+    title: 'Control Systems',
+    skills: [
+      { id: 'block', name: 'Block Diagrams', icon: '📊' },
+      { id: 'feedback', name: 'Feedback', icon: '🔄' },
+      { id: 'stability', name: 'Stability', icon: '⚖️' },
+      { id: 'controllers', name: 'Controllers', icon: '🎛️' }
+    ]
+  },
+  elec_machines: {
+    title: 'Electrical Machines',
+    skills: [
+      { id: 'dc', name: 'DC Machines', icon: '🔋' },
+      { id: 'ac', name: 'AC Machines', icon: '🔌' },
+      { id: 'transformers', name: 'Transformers', icon: '🔄' },
+      { id: 'motors', name: 'Motors', icon: '⚙️' }
+    ]
+  },
+  elec_measure: {
+    title: 'Measurements',
+    skills: [
+      { id: 'instruments', name: 'Instruments', icon: '🧰' },
+      { id: 'errors', name: 'Errors', icon: '❌' },
+      { id: 'bridges', name: 'Bridges', icon: '🌉' },
+      { id: 'transducers', name: 'Transducers', icon: '🔌' }
+    ]
+  },
+  // Civil
+  civil_struct: {
+    title: 'Structural Engineering',
+    skills: [
+      { id: 'beams', name: 'Beams', icon: '🪵' },
+      { id: 'columns', name: 'Columns', icon: '🏛️' },
+      { id: 'trusses', name: 'Trusses', icon: '🏗️' },
+      { id: 'frames', name: 'Frames', icon: '🖼️' }
+    ]
+  },
+  civil_geotech: {
+    title: 'Geotechnical Engineering',
+    skills: [
+      { id: 'soil', name: 'Soil Mechanics', icon: '🌱' },
+      { id: 'foundations', name: 'Foundations', icon: '🏠' },
+      { id: 'retaining', name: 'Retaining Walls', icon: '🧱' },
+      { id: 'earthquake', name: 'Earthquake Engg.', icon: '🌎' }
+    ]
+  },
+  civil_transport: {
+    title: 'Transportation',
+    skills: [
+      { id: 'roads', name: 'Roads', icon: '🛣️' },
+      { id: 'railways', name: 'Railways', icon: '🚆' },
+      { id: 'traffic', name: 'Traffic Engg.', icon: '🚦' },
+      { id: 'airports', name: 'Airports', icon: '🛫' }
+    ]
+  },
+  civil_survey: {
+    title: 'Surveying',
+    skills: [
+      { id: 'chains', name: 'Chain Survey', icon: '⛓️' },
+      { id: 'levels', name: 'Levelling', icon: '📏' },
+      { id: 'theodolite', name: 'Theodolite', icon: '🎯' },
+      { id: 'gps', name: 'GPS', icon: '📡' }
+    ]
   }
 };
 
-const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock = false }) => {
+const BRANCH_SUBJECTS = {
+  'CS/IT': ['Software Development Engineer', 'Frontend Development', 'Backend Development', 'DevOps & Cloud', 'Database & Data'],
+  'Mechanical': ['Thermodynamics', 'Fluid Mechanics', 'Machine Design', 'Manufacturing'],
+  'ENTC': ['Digital Electronics', 'Analog Circuits', 'Communication Systems', 'Microprocessors'],
+  'Electrical': ['Power Systems', 'Control Systems', 'Electrical Machines', 'Measurements'],
+  'Civil': ['Structural Engineering', 'Geotechnical Engineering', 'Transportation', 'Surveying'],
+};
+
+const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock = false, branch }) => {
   const navigate = useNavigate();
   const { interviewCode: paramInterviewCode } = useParams();
   const interviewCode = propInterviewCode || paramInterviewCode;
@@ -136,6 +292,12 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
     }
   };
 
+  // Filter categories based on branch
+  let categoriesToShow = Object.entries(SKILL_CATEGORIES);
+  if (branch && BRANCH_SUBJECTS[branch]) {
+    categoriesToShow = categoriesToShow.filter(([cat, { title }]) => BRANCH_SUBJECTS[branch].includes(title));
+  }
+
   return (
     <div className="skills-selection">
       {isLoading ? (
@@ -149,17 +311,20 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
       ) : (
         <>
           <div className="header-section">
-            <h1>Select Your Skills</h1>
-            <p className="subtitle">Choose at least 2 skills for your technical interview</p>
+            <h1>Select Your Subjects</h1>
+            <p className="subtitle">Choose at least 2 subjects for your technical interview</p>
+            {branch && <div className="branch-info">Branch: <strong>{branch}</strong></div>}
+            {!branch && <div className="error-message">Please select a branch first.</div>}
             {error && <div className="error-message">{error}</div>}
             <div className="selection-info">
               <span className="selected-count">{selectedSkills.length}</span>
-              <span>skills selected</span>
+              <span>subjects selected</span>
             </div>
           </div>
 
           <div className="skills-container" style={{gap: '1rem'}}>
-            {Object.entries(SKILL_CATEGORIES).map(([category, { title, skills }]) => (
+            {categoriesToShow.length === 0 && <div>No subjects available for this branch.</div>}
+            {categoriesToShow.map(([category, { title, skills }]) => (
               <div key={category} className="skill-category" style={{padding: '0.5rem 0.25rem', marginBottom: '0.5rem'}}>
                 <h2 className="category-title" style={{fontSize: '1.1rem', marginBottom: '0.5rem', paddingBottom: '0.25rem'}}>{title}</h2>
                 <div className="skills-grid">
@@ -168,7 +333,6 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
                       key={id}
                       className={`skill-button ${selectedSkills.includes(name) ? 'selected' : ''}`}
                       onClick={() => {
-                        console.log('Button clicked for skill:', name);
                         toggleSkill(name);
                       }}
                     >
@@ -185,7 +349,7 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
             <button
               className="start-button"
               onClick={handleStartInterview}
-              disabled={selectedSkills.length < 2}
+              disabled={selectedSkills.length < 2 || !branch}
             >
               {isLoading ? 'Starting Interview...' : 'Start Interview'}
             </button>

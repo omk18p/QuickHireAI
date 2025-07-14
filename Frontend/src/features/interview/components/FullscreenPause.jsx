@@ -71,10 +71,10 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
 
   // Always sync suspicious/app switch counts to sessionStorage
   useEffect(() => {
-    sessionStorage.setItem('pauseSuspiciousActivityCount', suspiciousActivityCount.toString());
+      sessionStorage.setItem('pauseSuspiciousActivityCount', suspiciousActivityCount.toString());
   }, [suspiciousActivityCount]);
   useEffect(() => {
-    sessionStorage.setItem('pauseAppSwitchCount', appSwitchCount.toString());
+      sessionStorage.setItem('pauseAppSwitchCount', appSwitchCount.toString());
   }, [appSwitchCount]);
 
   // On mount and on resume, always re-sync counts from sessionStorage
