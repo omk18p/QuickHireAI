@@ -129,8 +129,8 @@ const SignupPage = () => {
         <div style={{ textAlign: "center", marginTop: 40 }}>
           <p>
             Backend is sleeping. Click below to turn on the server.<br/>
-            It may take 5–15 seconds to wake up.<br/>
-            <b>After Render says "Incoming request received...", return to this page.</b>
+            It may take 30-60 seconds to wake up.(Using free tier of Render)<br/>
+            <b>Click the button below to wake up the backend and when backend is ready, you will see navigation button.</b>
           </p>
           <button onClick={handleWakeBackend}>
             Turn On Backend
