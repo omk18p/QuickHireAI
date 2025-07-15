@@ -112,14 +112,23 @@ const LoginPage = () => {
     }
   };
 
+  const renderHealthcheckUrl = "https://quickhireai.onrender.com/healthcheck";
+
+  const handleWakeBackend = () => {
+    window.open(renderHealthcheckUrl, "_blank");
+  };
+
   return (
     <div className="page-container">
       {!backendOnline ? (
         <div style={{ textAlign: "center", marginTop: 40 }}>
-          <p>Backend is sleeping. Click below to start the server.<br/>
-          It may take 5–15 seconds to wake up.</p>
-          <button onClick={wakeBackend} disabled={checkingBackend}>
-            {checkingBackend ? "Waking up..." : "Wake Up Backend"}
+          <p>
+            Backend is sleeping. Click below to turn on the server.<br/>
+            It may take 5–15 seconds to wake up.<br/>
+            <b>After Render says "Incoming request received...", return to this page.</b>
+          </p>
+          <button onClick={handleWakeBackend}>
+            Turn On Backend
           </button>
         </div>
       ) : (

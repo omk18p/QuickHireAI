@@ -134,11 +134,37 @@ app.get('/', (req, res) => {
 
 // Health check endpoint for uptime monitoring
 app.get('/healthcheck', (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "QuickHire AI backend is healthy",
-    time: new Date().toISOString()
-  });
+  const accept = req.headers.accept || '';
+  if (accept.includes('text/html')) {
+    res.status(200).send(`
+      <html>
+        <head>
+          <title>QuickHire AI Backend</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            body { font-family: Arial, sans-serif; background: #f8fafc; color: #222; text-align: center; padding: 60px; }
+            .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; display: inline-block; padding: 32px 40px; }
+            h1 { color: #2b7cff; }
+            .return-link { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #2b7cff; color: #fff; border-radius: 6px; text-decoration: none; font-size: 1.1em; }
+            .return-link:hover { background: #1a5dcc; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>Backend is awake!</h1>
+            <p>You can now return to the <b>QuickHire AI</b> website.</p>
+            <a class="return-link" href="https://quick-hire-ai.vercel.app/">Return to QuickHire AI</a>
+          </div>
+        </body>
+      </html>
+    `);
+  } else {
+    res.status(200).json({
+      status: "ok",
+      message: "QuickHire AI backend is healthy",
+      time: new Date().toISOString()
+    });
+  }
 });
 
 // Routes
