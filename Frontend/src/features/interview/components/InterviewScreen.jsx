@@ -90,6 +90,7 @@ const InterviewScreen = (props) => {
   const [isCurrentlyFullscreen, setIsCurrentlyFullscreen] = useState(false);
   const recentlyIncrementedRef = useRef(false);
   const focusLossIncrementedRef = useRef(false);
+  const [faceStatus, setFaceStatus] = useState('');
 
   // Add at the top of the component
   const getStoredLogs = () => {
@@ -1585,55 +1586,37 @@ const InterviewScreen = (props) => {
           <div style={{ width: 2, minHeight: '100%', background: 'linear-gradient(180deg,#e0e7ef 0%,#c7d2fe 100%)', borderRadius: 2, boxShadow: '0 0 8px #c7d2fe44', alignSelf: 'stretch' }}></div>
           {/* Right Panel: Webcam & Transcript & Controls & Code Editor */}
           <div style={{
-            flex: 1.4,
-            minWidth: 650,
-            maxWidth: 700,
-            padding: '1.5rem 1.2rem 1.2rem 1.2rem',
+            flex: 1.1,
+            minWidth: 420,
+            maxWidth: 520,
+            padding: '2.2rem 1.5rem 1.5rem 1.5rem',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'flex-start',
             background: 'transparent',
           }}>
-            <div className="webcam-label" style={{ fontWeight: 700, color: '#2563eb', fontSize: 16, marginBottom: 6, letterSpacing: '0.5px' }}>Webcam</div>
-            <div style={{
-              width: 260,
-              height: 180,
-              borderRadius: 12,
-              overflow: 'hidden',
-              background: '#222',
-              boxShadow: '0 0 10px #a5b4fc55',
-              border: '2px solid #e5e7eb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 10,
-              position: 'relative',
-            }}>
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <WebcamFeed confidence={feedback?.confidence} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+            {/* Face detection warning above webcam */}
+            {(faceStatus === 'No face detected' || faceStatus === 'More than 1 person detected') && (
+              <div style={{
+                width: 400,
+                margin: '0 auto 18px auto',
+                background: '#fff6f6',
+                color: '#dc2626',
+                border: '2px solid #ef4444',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: '1.08rem',
+                padding: '0.7rem 1.2rem',
+                textAlign: 'center',
+                boxShadow: '0 2px 12px rgba(220,38,38,0.08)',
+                zIndex: 1000
+              }}>
+                {faceStatus === 'No face detected'
+                  ? 'No face detected. Please ensure your face is visible in the frame.'
+                  : 'Warning: More than one person detected. Only one person should be in the frame.'}
               </div>
-              {/* Confidence Score Overlay (bottom left, more visible) */}
-              {typeof feedback?.confidence === 'number' && (
-                <div style={{
-                  position: 'absolute',
-                  left: 8,
-                  bottom: 8,
-                  background: 'rgba(255,255,255,0.98)',
-                  color: '#166534',
-                  fontWeight: 800,
-                  fontSize: 15,
-                  borderRadius: 7,
-                  padding: '2px 10px',
-                  boxShadow: '0 1px 4px #a5b4fc33',
-                  border: '2px solid #22c55e',
-                  zIndex: 2,
-                  letterSpacing: '0.5px',
-                }}>
-                  Confidence: {feedback.confidence}%
-                </div>
-              )}
-            </div>
+            )}
+            <WebcamFeed onFaceStatusChange={setFaceStatus} />
             {/* Transcript Area as chat bubble */}
             <div style={{ width: '100%', marginTop: 18, background: 'linear-gradient(135deg,#f8fafc 80%,#e0e7ef 100%)', borderRadius: 14, minHeight: 70, maxHeight: 140, overflowY: 'auto', padding: '0.8rem', color: '#334155', fontSize: '1.08rem', boxShadow: '0 2px 8px rgba(30,41,59,0.08)', border: '1.2px solid #c7d2fe', transition: 'box-shadow 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontWeight: 700, fontSize: '1rem', color: '#2563eb', marginBottom: 4 }}>Transcript:</span>

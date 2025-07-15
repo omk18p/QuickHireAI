@@ -159,11 +159,11 @@ app.get('/healthcheck', (req, res) => {
       </html>
     `);
   } else {
-    res.status(200).json({
-      status: "ok",
-      message: "QuickHire AI backend is healthy",
-      time: new Date().toISOString()
-    });
+  res.status(200).json({
+    status: "ok",
+    message: "QuickHire AI backend is healthy",
+    time: new Date().toISOString()
+  });
   }
 });
 
