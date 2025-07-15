@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/SignupPage.css";
 import { register } from "../services/authApi";
+import { getApiBaseUrl } from "../../../config/api";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -28,7 +29,8 @@ const SignupPage = () => {
 
   const checkBackend = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/healthcheck`);
+      const apiBaseUrl = getApiBaseUrl();
+      const res = await fetch(`${apiBaseUrl.replace('/api', '')}/healthcheck`);
       if (res.ok) {
         setBackendOnline(true);
         setCheckingBackend(false);
