@@ -29,7 +29,7 @@ const CodeEditor = ({ onCodeChange }) => {
       <textarea
         value={code}
         onChange={handleCodeChange}
-        placeholder="Write your code here..."
+        placeholder="Write your code here...Code will be saved automatically."
         className="code-textarea"
         spellCheck="false"
       />
