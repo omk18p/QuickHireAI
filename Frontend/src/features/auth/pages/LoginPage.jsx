@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css"; // Import the CSS file
 import { login } from "../services/authApi";
@@ -10,6 +10,57 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Backend wake-up logic
+  const [backendOnline, setBackendOnline] = useState(false);
+  const [checkingBackend, setCheckingBackend] = useState(true);
+  const pollInterval = useRef(null);
+
+  const checkBackend = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/healthcheck`);
+      if (res.ok) {
+        setBackendOnline(true);
+        setCheckingBackend(false);
+        if (pollInterval.current) {
+          clearInterval(pollInterval.current);
+          pollInterval.current = null;
+        }
+        return true;
+      } else {
+        setBackendOnline(false);
+        setCheckingBackend(false);
+        return false;
+      }
+    } catch (err) {
+      setBackendOnline(false);
+      setCheckingBackend(false);
+      return false;
+    }
+  };
+
+  const wakeBackend = async () => {
+    setCheckingBackend(true);
+    const online = await checkBackend();
+    if (!online && !pollInterval.current) {
+      pollInterval.current = setInterval(checkBackend, 2000);
+    }
+  };
+
+  useEffect(() => {
+    checkBackend().then((online) => {
+      if (!online && !pollInterval.current) {
+        pollInterval.current = setInterval(checkBackend, 2000);
+      }
+    });
+    return () => {
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+        pollInterval.current = null;
+      }
+    };
+    // eslint-disable-next-line
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -61,90 +112,100 @@ const LoginPage = () => {
 
   return (
     <div className="page-container">
-      <div className="login-wrapper">
-        <div className="left-section">
-          <div className="ai-animation">
-            <div className="pulse-circle"></div>
-            <i className="fas fa-robot"></i>
-          </div>
-          <h1>Welcome to QuickHire AI</h1>
-          <p>Experience the future of interviewing with AI-powered assessments</p>
+      {!backendOnline ? (
+        <div style={{ textAlign: "center", marginTop: 40 }}>
+          <p>Backend is sleeping. Click below to start the server.<br/>
+          It may take 5–15 seconds to wake up.</p>
+          <button onClick={wakeBackend} disabled={checkingBackend}>
+            {checkingBackend ? "Waking up..." : "Wake Up Backend"}
+          </button>
         </div>
-
-        <div className="right-section">
-          <div className="login-form-container">
-            <h2>
-              <i className="fas fa-user-circle"></i>
-              Login to Your Account
-            </h2>
-
-            <div className="toggle-buttons">
-              <button
-                className={userType === "student" ? "active" : ""}
-                onClick={() => setUserType("student")}
-              >
-                <i className="fas fa-user-graduate"></i>
-                Student
-              </button>
-              <button
-                className={userType === "company" ? "active" : ""}
-                onClick={() => setUserType("company")}
-              >
-                <i className="fas fa-building"></i>
-                Company
-              </button>
+      ) : (
+        <div className="login-wrapper">
+          <div className="left-section">
+            <div className="ai-animation">
+              <div className="pulse-circle"></div>
+              <i className="fas fa-robot"></i>
             </div>
+            <h1>Welcome to QuickHire AI</h1>
+            <p>Experience the future of interviewing with AI-powered assessments</p>
+          </div>
 
-            {error && <div className="error-message">{error}</div>}
+          <div className="right-section">
+            <div className="login-form-container">
+              <h2>
+                <i className="fas fa-user-circle"></i>
+                Login to Your Account
+              </h2>
 
-            <form onSubmit={handleLogin}>
-              <div className="input-group">
-                <i className="fas fa-envelope"></i>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+              <div className="toggle-buttons">
+                <button
+                  className={userType === "student" ? "active" : ""}
+                  onClick={() => setUserType("student")}
+                >
+                  <i className="fas fa-user-graduate"></i>
+                  Student
+                </button>
+                <button
+                  className={userType === "company" ? "active" : ""}
+                  onClick={() => setUserType("company")}
+                >
+                  <i className="fas fa-building"></i>
+                  Company
+                </button>
               </div>
-              <div className="input-group">
-                <i className="fas fa-lock"></i>
-                <input
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="login-button"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Logging in...
-                  </>
-                ) : (
-                  <>
-                    Login <i className="fas fa-arrow-right"></i>
-                  </>
-                )}
-              </button>
-            </form>
 
-            <p className="signup-text">
-              Don't have an account?{" "}
-              <span onClick={() => navigate("/signup")}>Sign Up</span>
-            </p>
+              {error && <div className="error-message">{error}</div>}
+
+              <form onSubmit={handleLogin}>
+                <div className="input-group">
+                  <i className="fas fa-envelope"></i>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="input-group">
+                  <i className="fas fa-lock"></i>
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="login-button"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Logging in...
+                    </>
+                  ) : (
+                    <>
+                      Login <i className="fas fa-arrow-right"></i>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <p className="signup-text">
+                Don't have an account?{" "}
+                <span onClick={() => navigate("/signup")}>Sign Up</span>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
