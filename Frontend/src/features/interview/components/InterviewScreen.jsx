@@ -1219,16 +1219,7 @@ const InterviewScreen = (props) => {
     /sql|query|code|program|function|algorithm|cpp|java|python|javascript/i.test(currentQuestion.question || currentQuestion.text)
   );
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      width: '100vw', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-      fontFamily: 'Inter, Roboto, Arial, sans-serif', 
-      display: 'flex', 
-      flexDirection: 'column',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
       {/* Background Effects */}
       <div style={{
         position: 'absolute',

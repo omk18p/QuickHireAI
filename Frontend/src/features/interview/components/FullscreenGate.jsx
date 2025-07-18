@@ -94,14 +94,15 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
 
   if (!isSupported) {
     return (
-      <div className="fullscreen-gate">
-        <div className="fullscreen-content">
+      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(30,41,59,0.10)', padding: '3rem', maxWidth: 600, width: '100%', textAlign: 'center' }}>
           <div className="fullscreen-icon">⚠️</div>
           <h2>Fullscreen Not Supported</h2>
-          <p>Your browser doesn't support fullscreen mode. For the best interview experience, please use a modern browser.</p>
+          <p style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>Your browser doesn't support fullscreen mode. For the best interview experience, please use a modern browser.</p>
           <button 
             className="continue-button"
             onClick={onFullscreenEntered}
+            style={{ background: 'linear-gradient(90deg,#3b82f6,#10b981)', color: 'white', borderRadius: 10, fontWeight: 700, border: 'none', fontSize: '1.1rem', boxShadow: '0 2px 8px rgba(37,99,235,0.10)' }}
           >
             Continue Anyway
           </button>
@@ -111,20 +112,20 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
   }
 
   return (
-    <div className="fullscreen-gate">
-      <div className="fullscreen-content">
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(30,41,59,0.10)', padding: '3rem 2.5rem', maxWidth: 800, width: '100%', textAlign: 'center' }}>
         <div className="fullscreen-icon">🖥️</div>
         <h2>Interview Fullscreen Required</h2>
-        <p>To ensure a secure and focused interview experience, please enter fullscreen mode.</p>
+        <p style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>To ensure a secure and focused interview experience, please enter fullscreen mode.</p>
         
         {showInstructions && (
           <div className="instructions">
-            <h3>Why Fullscreen?</h3>
+            <h3 style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>Why Fullscreen?</h3>
             <ul>
-              <li>🔒 Prevents accidental tab switching</li>
-              <li>🎯 Maintains focus during the interview</li>
-              <li>📱 Ensures optimal viewing experience</li>
-              <li>⚡ Reduces distractions</li>
+              <li style={{ color: '#334155', fontWeight: 600 }}>🔒 Prevents accidental tab switching</li>
+              <li style={{ color: '#334155', fontWeight: 600 }}>🎯 Maintains focus during the interview</li>
+              <li style={{ color: '#334155', fontWeight: 600 }}>📱 Ensures optimal viewing experience</li>
+              <li style={{ color: '#334155', fontWeight: 600 }}>⚡ Reduces distractions</li>
             </ul>
           </div>
         )}
@@ -134,6 +135,7 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
             className="fullscreen-button"
             onClick={requestFullscreen}
             disabled={isFullscreen}
+            style={{ background: 'linear-gradient(90deg,#3b82f6,#10b981)', color: 'white', borderRadius: 10, fontWeight: 700, border: 'none', fontSize: '1.1rem', boxShadow: '0 2px 8px rgba(37,99,235,0.10)' }}
           >
             {isFullscreen ? 'Fullscreen Active' : 'Enter Fullscreen'}
           </button>
@@ -154,19 +156,19 @@ const FullscreenGate = ({ onFullscreenEntered }) => {
           {isFullscreen ? (
             <div className="status-success">
               <span className="status-icon">✅</span>
-              <span>Fullscreen mode active</span>
+              <span style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>Fullscreen mode active</span>
             </div>
           ) : (
             <div className="status-waiting">
               <span className="status-icon">⏳</span>
-              <span>Waiting for fullscreen...</span>
+              <span style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>Waiting for fullscreen...</span>
             </div>
           )}
         </div>
         
         <div className="fullscreen-tips">
-          <h4>Quick Tips:</h4>
-          <ul>
+          <h4 style={{ color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7 }}>Quick Tips:</h4>
+          <ul style={{ color: '#334155', fontSize: '1.08rem', margin: '8px 0' }}>
             <li>Press <kbd>F11</kbd> or <kbd>Esc</kbd> to exit fullscreen</li>
             <li>Ensure your microphone and camera are working</li>
             <li>Close other applications to avoid distractions</li>

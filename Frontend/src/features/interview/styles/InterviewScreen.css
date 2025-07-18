@@ -21,42 +21,49 @@
 
 .interview-screen {
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f8fafc;
   overflow: hidden;
   position: relative;
 }
 
-.interview-screen::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
-  pointer-events: none;
+/* Main card style for all sections */
+.main-card, .question-section, .webcam-section, .transcript-container, .monitoring-section {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(30,41,59,0.10);
+  padding: 2rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Floating particles animation */
-.interview-screen::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05) 0%, transparent 50%);
-  animation: float 20s ease-in-out infinite;
-  pointer-events: none;
+/* Modern button styles */
+.record-button, .skip-button {
+  background: linear-gradient(90deg,#3b82f6,#10b981);
+  color: white;
+  border-radius: 22px;
+  font-weight: 700;
+  border: none;
+  font-size: 1.18rem;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  padding: 0.9rem 0;
+  margin-bottom: 14px;
+  width: 100%;
+  max-width: 260px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+.record-button:hover:not(:disabled), .skip-button:hover:not(:disabled) {
+  background: linear-gradient(90deg,#2563eb,#10b981);
+  box-shadow: 0 4px 16px rgba(37,99,235,0.18);
+}
+
+/* Remove old gradients and backgrounds from .interview-screen::before, .interview-screen::after */
+.interview-screen::before, .interview-screen::after {
+  display: none !important;
 }
 
 .interview-layout {

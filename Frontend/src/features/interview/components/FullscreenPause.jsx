@@ -407,148 +407,68 @@ const FullscreenPause = ({ onFullscreenResumed, currentQuestion, questionIndex, 
   };
 
   return (
-    <div className="fullscreen-pause-overlay">
-      <div className="fullscreen-pause-content">
-        <div className="pause-icon">⏸️</div>
-        <h2>Interview Paused</h2>
-        <p><strong>Fullscreen mode is REQUIRED</strong> to continue your interview.</p>
-        <div className="mandatory-notice">
-          <span className="warning-icon">⚠️</span>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(30,41,59,0.10)', padding: '2.5rem 2.5rem', maxWidth: 800, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 18 }}>⏸️</div>
+        <h2 style={{ color: '#1e293b', fontWeight: 900, fontSize: '2rem', marginBottom: 10 }}>Interview Paused</h2>
+        <p style={{ color: '#334155', fontSize: '1.1rem', marginBottom: 18 }}><strong>Fullscreen mode is REQUIRED</strong> to continue your interview.</p>
+        <div style={{ background: '#fef3c7', color: '#b45309', borderRadius: 10, padding: '0.8rem 1rem', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <span style={{ fontSize: '1.3rem' }}>⚠️</span>
           <span>You must enter fullscreen mode to proceed with the interview.</span>
         </div>
-        
-        {/* Current Question Info */}
         {currentQuestion && (
-          <div className="current-question-info">
-            <div className="question-progress">
-              <span className="progress-text">Question {questionIndex + 1} of {totalQuestions}</span>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
-                  style={{ width: `${((questionIndex + 1) / totalQuestions) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-            <div className="question-preview">
-              <h4>Current Question:</h4>
-              <p>{currentQuestion.question || currentQuestion.text}</p>
-            </div>
+          <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '1rem', marginBottom: 18, textAlign: 'left' }}>
+            <div style={{ color: '#2563eb', fontWeight: 700, marginBottom: 6 }}>Question {questionIndex + 1} of {totalQuestions}</div>
+            <div style={{ color: '#1e293b', fontWeight: 600, marginBottom: 4 }}>Current Question:</div>
+            <div style={{ color: '#334155', fontSize: '1rem' }}>{currentQuestion.question || currentQuestion.text}</div>
           </div>
         )}
-        
         {showInstructions && (
-          <div className="pause-instructions">
-            <h3>Why Fullscreen is MANDATORY?</h3>
-            <ul>
-              <li>🔒 <strong>REQUIRED</strong> for interview security</li>
-              <li>🎯 <strong>MANDATORY</strong> to maintain focus</li>
-              <li>📱 <strong>ESSENTIAL</strong> for optimal experience</li>
-              <li>⚡ <strong>NECESSARY</strong> to prevent distractions</li>
+          <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '1.2rem', marginBottom: 18, textAlign: 'left' }}>
+            <div style={{ color: '#1e293b', fontWeight: 700, marginBottom: 8 }}>Why Fullscreen is MANDATORY?</div>
+            <ul style={{ color: '#334155', fontSize: '1.05rem', lineHeight: 1.7, margin: 0, paddingLeft: 18 }}>
+              <li>🔒 Required for interview security</li>
+              <li>🎯 Mandatory to maintain focus</li>
+              <li>📱 Essential for optimal experience</li>
+              <li>⚡ Necessary to prevent distractions</li>
             </ul>
-            <div className="strict-notice">
+            <div style={{ background: '#fee2e2', color: '#b91c1c', borderRadius: 8, padding: '0.6rem 1rem', marginTop: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>⚠️</span>
-              <span><strong>You cannot continue without entering fullscreen mode.</strong></span>
+              <span>You cannot continue without entering fullscreen mode.</span>
             </div>
           </div>
         )}
-        
-        <div className="pause-actions">
-          <button 
-            className="resume-fullscreen-button"
+        <div style={{ margin: '1.5rem 0' }}>
+          <button
+            style={{ background: 'linear-gradient(90deg,#3b82f6,#10b981)', color: 'white', borderRadius: 10, fontWeight: 700, border: 'none', fontSize: '1.1rem', boxShadow: '0 2px 8px rgba(37,99,235,0.10)', padding: '1rem 2rem', cursor: isFullscreen ? 'not-allowed' : 'pointer', opacity: isFullscreen ? 0.7 : 1 }}
             onClick={requestFullscreen}
             disabled={isFullscreen}
           >
             {isFullscreen ? 'Returning to Interview...' : 'ENTER FULLSCREEN TO CONTINUE'}
           </button>
         </div>
-        
-        <div className="pause-status">
+        <div style={{ margin: '1.5rem 0' }}>
           {isFullscreen ? (
-            <div className="status-resuming">
-              <span className="status-icon">🔄</span>
+            <div style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🔄</span>
               <span>Resuming interview...</span>
             </div>
           ) : (
-            <div className="status-paused">
-              <span className="status-icon">⏸️</span>
-              <span><strong>Interview BLOCKED</strong> - Fullscreen required</span>
+            <div style={{ color: '#b91c1c', fontWeight: 700, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <span>⏸️ Interview BLOCKED - Fullscreen required</span>
               {pauseTime > 0 && (
-                <div className="pause-time">
+                <div style={{ color: '#b91c1c', fontWeight: 500, fontSize: '0.98rem' }}>
                   Blocked for {Math.floor(pauseTime / 60)}:{(pauseTime % 60).toString().padStart(2, '0')}
                 </div>
               )}
-              
-              {/* Suspicious Activity Counters */}
               {(suspiciousActivityCount > 0 || appSwitchCount > 0) && (
-                <div className="suspicious-activity-counters">
-                  <div className="counter-item">
-                    <span className="counter-icon">🚨</span>
-                    <span className="counter-label">Suspicious Activities:</span>
-                    <span className="counter-value">{suspiciousActivityCount}</span>
-                  </div>
-                  <div className="counter-item">
-                    <span className="counter-icon">📱</span>
-                    <span className="counter-label">App Switches:</span>
-                    <span className="counter-value">{appSwitchCount}</span>
-                  </div>
+                <div style={{ marginTop: 8, color: '#b91c1c', fontWeight: 600, fontSize: '0.98rem', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div>🚨 Suspicious Activities: {suspiciousActivityCount}</div>
+                  <div>📱 App Switches: {appSwitchCount}</div>
                 </div>
               )}
             </div>
           )}
-        </div>
-        
-        {/* Monitoring Activity Area */}
-        <div className="monitoring-activity-area">
-          <h4 className="monitoring-title">
-            <span className="monitoring-icon">🔍</span>
-            Security Monitoring Active
-          </h4>
-          <div className="monitoring-counters">
-            <div className="monitoring-counter">
-              <div className="counter-header">
-                <span className="counter-icon">🚨</span>
-                <span className="counter-title">Suspicious Activities</span>
-              </div>
-              <div className="counter-display">
-                <span className="counter-number">{suspiciousActivityCount}</span>
-                <span className="counter-unit">detected</span>
-              </div>
-            </div>
-            <div className="monitoring-counter">
-              <div className="counter-header">
-                <span className="counter-icon">📱</span>
-                <span className="counter-title">App Switches</span>
-              </div>
-              <div className="counter-display">
-                <span className="counter-number">{appSwitchCount}</span>
-                <span className="counter-unit">attempted</span>
-              </div>
-            </div>
-          </div>
-          <div className="monitoring-status">
-            <span className="status-indicator">
-              {suspiciousActivityCount > 0 || appSwitchCount > 0 ? '⚠️' : '✅'}
-            </span>
-            <span className="status-text">
-              {suspiciousActivityCount > 0 || appSwitchCount > 0 
-                ? 'Security violations detected' 
-                : 'No suspicious activity detected'}
-            </span>
-          </div>
-        </div>
-        
-        <div className="pause-tips">
-          <h4>How to Continue:</h4>
-          <ul>
-            <li><strong>Press <kbd>F11</kbd> to enter fullscreen</strong></li>
-            <li><strong>Or click the "ENTER FULLSCREEN" button above</strong></li>
-            <li>Ensure your microphone and camera are still working</li>
-            <li>Close other applications to avoid distractions</li>
-          </ul>
-          <div className="final-warning">
-            <span>🚫</span>
-            <span><strong>No other way to continue the interview!</strong></span>
-          </div>
         </div>
       </div>
     </div>
