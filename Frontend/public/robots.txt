@@ -1,5 +1,18 @@
 User-agent: *
 Allow: /
 
+# Disallow private/dynamic routes
+Disallow: /dashboard/
+Disallow: /company-dashboard/
+Disallow: /interview/session/
+Disallow: /interview/screen/
+Disallow: /interview/guidelines/
+Disallow: /interview/skills/
+
+# Allow important public pages
+Allow: /login
+Allow: /signup
+Allow: /interview/mock
+
 # Sitemap location
 Sitemap: https://quick-hire-ai.vercel.app/sitemap.xml
