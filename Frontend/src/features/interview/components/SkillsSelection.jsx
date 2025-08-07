@@ -299,63 +299,78 @@ const SkillsSelection = ({ interviewCode: propInterviewCode, onContinue, isMock 
   }
 
   return (
-    <div className="skills-selection">
-      {isLoading ? (
-        <div className="loading-overlay">
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <h2>Preparing Your Interview...</h2>
-            <p>Generating personalized questions based on your selected skills</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="header-section">
-            <h1>Select Your Subjects</h1>
-            <p className="subtitle">Choose at least 2 subjects for your technical interview</p>
-            {branch && <div className="branch-info">Branch: <strong>{branch}</strong></div>}
-            {!branch && <div className="error-message">Please select a branch first.</div>}
-            {error && <div className="error-message">{error}</div>}
-            <div className="selection-info">
-              <span className="selected-count">{selectedSkills.length}</span>
-              <span>subjects selected</span>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '2rem 0' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        {isLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <h2>Preparing Your Interview...</h2>
+              <p>Generating personalized questions based on your selected skills</p>
             </div>
           </div>
-
-          <div className="skills-container" style={{gap: '1rem'}}>
-            {categoriesToShow.length === 0 && <div>No subjects available for this branch.</div>}
-            {categoriesToShow.map(([category, { title, skills }]) => (
-              <div key={category} className="skill-category" style={{padding: '0.5rem 0.25rem', marginBottom: '0.5rem'}}>
-                <h2 className="category-title" style={{fontSize: '1.1rem', marginBottom: '0.5rem', paddingBottom: '0.25rem'}}>{title}</h2>
-                <div className="skills-grid">
-                  {skills.map(({ id, name, icon }) => (
-                    <button
-                      key={id}
-                      className={`skill-button ${selectedSkills.includes(name) ? 'selected' : ''}`}
-                      onClick={() => {
-                        toggleSkill(name);
-                      }}
-                    >
-                      <span className="skill-icon">{icon}</span>
-                      <span className="skill-name">{name}</span>
-                    </button>
-                  ))}
-                </div>
+        ) : (
+          <>
+            <div className="header-section">
+              <h1 style={{ color: '#1e293b', fontWeight: 900, fontSize: '2.1rem', marginBottom: 10, marginTop: 18, textAlign: 'center', zIndex: 2, position: 'relative', filter: 'none', opacity: 1, textShadow: 'none' }}>Select Your Subjects</h1>
+              <p style={{ color: '#334155', fontWeight: 500, fontSize: '1.08rem', textAlign: 'center', marginBottom: 8, marginTop: 0, filter: 'none', opacity: 1, textShadow: 'none' }}>Choose at least 2 subjects for your technical interview</p>
+              {branch && <div style={{ color: '#1e293b', fontWeight: 600, fontSize: '1.08rem', textAlign: 'center', marginBottom: 18, filter: 'none', opacity: 1, textShadow: 'none' }}>Branch: <strong>{branch}</strong></div>}
+              {!branch && <div className="error-message">Please select a branch first.</div>}
+              {error && <div className="error-message">{error}</div>}
+              <div className="selection-info">
+                <span className="selected-count">{selectedSkills.length}</span>
+                <span>subjects selected</span>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="action-buttons">
-            <button
-              className="start-button"
-              onClick={handleStartInterview}
-              disabled={selectedSkills.length < 2 || !branch}
-            >
-              {isLoading ? 'Starting Interview...' : 'Start Interview'}
-            </button>
-          </div>
-        </>
-      )}
+            <div className="skills-container">
+              {categoriesToShow.length === 0 && <div>No subjects available for this branch.</div>}
+              {categoriesToShow.map(([category, { title, skills }]) => (
+                <div key={category} className="skill-category">
+                  <h2 className="category-title">{title}</h2>
+                  <div className="skills-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.7rem', justifyContent: 'flex-start', marginBottom: '1.2rem', alignItems: 'center' }}>
+                    {skills.map(({ id, name, icon }) => (
+                      <button
+                        key={id}
+                        className={`skill-button ${selectedSkills.includes(name) ? 'selected' : ''}`}
+                        onClick={() => {
+                          toggleSkill(name);
+                        }}
+                        style={{ background: selectedSkills.includes(name) ? '#fff' : '#f1f5f9', border: selectedSkills.includes(name) ? '2px solid #3b82f6' : '2px solid #e5e7eb', color: '#1e293b', borderRadius: 10, fontWeight: 600, fontSize: '1rem', boxShadow: selectedSkills.includes(name) ? '0 2px 8px rgba(59,130,246,0.10)' : 'none', transition: 'all 0.2s', minHeight: 44, padding: '0.7rem 1.2rem', cursor: 'pointer' }}
+                        onMouseEnter={(e) => {
+                          if (selectedSkills.includes(name)) {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.background = '#f0f9ff';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedSkills.includes(name)) {
+                            e.currentTarget.style.border = '2px solid #e5e7eb';
+                            e.currentTarget.style.background = '#f1f5f9';
+                          }
+                        }}
+                      >
+                        <span className="skill-icon">{icon}</span> {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="action-buttons">
+              <button
+                className="start-button"
+                onClick={handleStartInterview}
+                disabled={selectedSkills.length < 2 || !branch}
+                style={{ background: 'linear-gradient(90deg,#3b82f6,#10b981)', color: 'white', borderRadius: 10, fontWeight: 700, border: 'none', fontSize: '1.2rem', boxShadow: '0 2px 8px rgba(37,99,235,0.10)', padding: '1.1rem 2.5rem', marginTop: 24, marginBottom: 12 }}
+              >
+                {isLoading ? 'Starting Interview...' : 'Start Interview'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

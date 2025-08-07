@@ -62,8 +62,9 @@
 }
 
 .instructions {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  /* Remove background and border for full visibility */
+  background: none;
+  border: none;
   border-radius: 12px;
   padding: 1.5rem;
   margin: 2rem 0;
@@ -86,7 +87,8 @@
 .instructions li {
   padding: 0.5rem 0;
   font-size: 1rem;
-  color: #374151;
+  color: #334155;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -188,8 +190,9 @@
 }
 
 .fullscreen-tips {
-  background: rgba(249, 250, 251, 0.8);
-  border: 1px solid #e5e7eb;
+  /* Remove background and border for full visibility */
+  background: none;
+  border: none;
   border-radius: 12px;
   padding: 1.5rem;
   margin-top: 2rem;
@@ -211,8 +214,9 @@
 
 .fullscreen-tips li {
   padding: 0.5rem 0;
-  font-size: 0.95rem;
-  color: #6b7280;
+  font-size: 1rem;
+  color: #334155;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;

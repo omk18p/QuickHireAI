@@ -22,8 +22,7 @@ const connectDB = async () => {
     console.error(`MongoDB Connection Error: ${error.message}`);
     console.log('Continuing without database connection for testing...');
     global.isDatabaseConnected = false;
-    // Don't exit the process, just log the error
-    // process.exit(1);
+    
   }
 };
 
